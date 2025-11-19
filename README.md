@@ -4,7 +4,7 @@
 Modify `create_database.sql`
 
 # Tony
-Frontend
+Frontend (React)
 
 # Mike
-Backend
+Backend (FastAPI + pymysql)
