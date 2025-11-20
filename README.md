@@ -15,9 +15,9 @@ Modify `create_database.sql`
 `session`
 - start_time
 - end_time
+- note
 
 `set`
-- set_id {PK}
 - set_num
 - weight
 - reps
@@ -47,8 +47,7 @@ Modify `create_database.sql`
 - description
 
 ## ERD
-<img width="783" height="725" alt="image" src="https://github.com/user-attachments/assets/eb6510a2-290c-496b-925c-01b43d755c14" />
-
+<img width="811" height="733" alt="image" src="https://github.com/user-attachments/assets/7d519976-5582-4c6f-9130-4785710ece45" />
 
 # Tony
 Frontend (React)
