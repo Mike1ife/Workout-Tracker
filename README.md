@@ -13,14 +13,31 @@ Modify `create_database.sql`
 - gender
 
 `session`
-- session_id {PK}
 - start_time
 - end_time
+
+`set`
+- set_id {PK}
+- set_num
+- weight
+- reps
+
+`food`
+- name {PK}
+- carbohydrate
+- protein
+- fat
+
+`health condition`
+- created_at
+- weight
+- body_fat
 
 ## Predefined Table
 
 `equipment`
 - name {PK}
+- description
 
 `muscle`
 - name {PK}
@@ -28,6 +45,10 @@ Modify `create_database.sql`
 `exercise`
 - name {PK}
 - description
+
+## ERD
+<img width="783" height="725" alt="image" src="https://github.com/user-attachments/assets/eb6510a2-290c-496b-925c-01b43d755c14" />
+
 
 # Tony
 Frontend (React)
