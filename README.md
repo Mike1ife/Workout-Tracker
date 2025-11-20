@@ -13,17 +13,21 @@ Modify `create_database.sql`
 - gender
 
 `session`
+- session_id {PK}
+- start_date
 - start_time
+- end_date
 - end_time
 - note
 
 `set`
+- set_id {PK}
 - set_num
 - weight
 - reps
 
 `food`
-- name {PK}
+- food_name {PK}
 - carbohydrate
 - protein
 - fat
@@ -35,19 +39,32 @@ Modify `create_database.sql`
 
 ## Predefined Table
 
+`exercise`
+- exercise_name {PK}
+- description
+
+`aerobics`
+- exercise_name {PK}
+- duration
+- distance
+
+`lifting`
+- exercise_name {PK}
+
 `equipment`
-- name {PK}
+- equipment_name {PK}
 - description
 
 `muscle`
-- name {PK}
+- muscle_name {PK}
 
-`exercise`
-- name {PK}
-- description
+`muscle group`
+- group_name {PK}
+- type
 
 ## ERD
-<img width="811" height="733" alt="image" src="https://github.com/user-attachments/assets/7d519976-5582-4c6f-9130-4785710ece45" />
+<img width="1135" height="1123" alt="image" src="https://github.com/user-attachments/assets/326c24a4-fa9b-4d5f-a861-20c22b62b66c" />
+
 
 # Tony
 Frontend (React)
