@@ -85,3 +85,4 @@ Frontend (React)
 
 # Mike
 Backend (FastAPI + pymysql)
+SELECT command should be packed as procedure in MySQL
