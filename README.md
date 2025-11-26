@@ -87,3 +87,9 @@ Frontend (React)
 Backend (FastAPI + pymysql)
 
 SELECT command should be packed as procedure in MySQL
+
+```
+cd backend
+uvicorn main:app --reload
+go to /docs to see API document
+```
