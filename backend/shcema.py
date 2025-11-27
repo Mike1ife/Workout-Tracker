@@ -1,15 +1,18 @@
 from pydantic import BaseModel
+from typing import Optional, Literal
 
 
 class User(BaseModel):
-    name: str
+    first_name: str
+    last_name: str
     email: str
-    age: int
-    gender: str
+    age: Optional[int]
+    gender: Literal["Male", "Female", "Other"]
 
 
 class Food(BaseModel):
-    name: str
+    foodName: str
+    calories: Optional[float]
     carbohydrate: float
     protein: float
     fat: float
@@ -20,18 +23,21 @@ class UserFoodLog(BaseModel):
     foodName: str
 
 
-class HealthReport(BaseModel):
-    weight: float
-    body_fat: float  # 0.2 = 20%
+class HealthCondition(BaseModel):
     createdAt: str
+    weight: float
+    body_fat_percent: float
 
 
 class Session(BaseModel):
-    startDate: str
     startTime: str
-    endDate: str
     endTime: str
-    note: str
+    note: Optional[str]
+
+
+class Exercise(BaseModel):
+    exerciseName: str
+    description: Optional[str]
 
 
 class SessionExercise(BaseModel):
@@ -39,34 +45,26 @@ class SessionExercise(BaseModel):
     exerciseName: str
 
 
-class Exercise(BaseModel):
-    name: str
-    description: str
-
-
-class Aerobics(Exercise):
-    duration: str
-    distance: str
-
-
-class Lifting(Exercise):
-    pass
-
-
-class Set(BaseModel):
-    weight: float
-    numOfReps: int
-
-
 class Equipment(BaseModel):
-    name: str
-    description: str
-
-
-class Muscle(BaseModel):
-    name: str
+    equipmentName: str
+    description: Optional[str]
 
 
 class MuscleGroup(BaseModel):
-    name: str
+    groupName: str
     type: str
+
+
+class Muscle(BaseModel):
+    muscleName: str
+
+
+class Set(BaseModel):
+    setNum: int
+    weight: float
+    reps: int
+
+
+class Metric(BaseModel):
+    duration: str
+    distance: float

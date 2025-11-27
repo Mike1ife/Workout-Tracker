@@ -1,208 +1,287 @@
 from fastapi import FastAPI, HTTPException
-
 from utils import *
 
 app = FastAPI()
 
 
-# ==== User ====
+# =======================
+#        USER
+# =======================
+
+
 @app.get("/", tags=["User"])
 async def root():
     return {"message": "hello world"}
 
 
-@app.get("/user/get", tags=["User"])
+@app.get("/users", tags=["User"])
 async def get_all_users():
-    users = fetch_all_users()
-    return {"all_users": users}
+    return {"all_users": fetch_all_users()}
 
 
-@app.get("/user/get/{userId}", tags=["User"])
+@app.get("/users/{userId}", tags=["User"])
 async def get_user_by_id(userId: int):
-    user = fetch_user_by_id(userId=userId)
-    return {"user": user}
+    return {"user": fetch_user_by_id(userId=userId)}
 
 
-@app.post("/user/add", tags=["User"])
+@app.post("/users", tags=["User"])
 async def add_user(user: User):
     insert_user(user=user)
     return {"message": "Add user successfully"}
 
 
-@app.post("/user/update/{userId}", tags=["User"])
+@app.put("/users/{userId}", tags=["User"])
 async def update_user_by_id(userId: int, user: User):
     update_user(userId=userId, user=user)
     return {"message": "Update user successfully"}
 
 
-@app.post("/user/delete/{userId}", tags=["User"])
+@app.delete("/users/{userId}", tags=["User"])
 async def delete_user_by_id(userId: int):
     delete_user(userId=userId)
     return {"message": "Delete user successfully"}
 
 
-# ==== Food ====
-@app.get("/food/get", tags=["Food"])
+# =======================
+#        FOOD
+# =======================
+
+
+@app.get("/foods", tags=["Food"])
 async def get_all_foods():
-    foods = fetch_all_foods()
-    return {"all_foods": foods}
+    return {"all_foods": fetch_all_foods()}
 
 
-@app.get("/food/get/{foodName}", tags=["Food"])
+@app.get("/foods/name/{foodName}", tags=["Food"])
 async def get_food_by_name(foodName: str):
-    food = fetch_food(foodName=foodName)
-    return {"food": food}
+    return {"food": fetch_food(foodName=foodName)}
 
 
-@app.get("/food/get/{userId}", tags=["Food"])
+@app.get("/foods/user/{userId}", tags=["Food"])
 async def get_foods_by_user_id(userId: int):
-    foods = fetch_foods_by_user_id(userId=userId)
-    return {"user_foods": foods}
+    return {"user_foods": fetch_foods_by_user_id(userId=userId)}
 
 
-@app.post("/food/add", tags=["Food"])
+@app.post("/foods", tags=["Food"])
 async def add_food(food: Food):
     insert_food(food=food)
     return {"message": "Add food successfully"}
 
 
-@app.post("/user/log_food", tags=["User Food Log"])
+@app.post("/foods/log", tags=["User Food Log"])
 async def add_user_food_log(userFoodLog: UserFoodLog):
     insert_user_food_log(userFoodLog=userFoodLog)
     return {"message": "Add user's food log successfully"}
 
 
-@app.post("/food/update/{foodName}", tags=["Food"])
-async def update_user_by_id(foodName: str, food: Food):
+@app.put("/foods/{foodName}", tags=["Food"])
+async def update_food_by_name(foodName: str, food: Food):
     update_food(foodName=foodName, food=food)
     return {"message": "Update food successfully"}
 
 
-@app.post("/food/delete/{foodName}", tags=["Food"])
-async def delete_user_by_id(foodName: str):
+@app.delete("/foods/{foodName}", tags=["Food"])
+async def delete_food_by_name(foodName: str):
     delete_food(foodName=foodName)
     return {"message": "Delete food successfully"}
 
 
-# ==== Health Report ====
-@app.get("/health_report/{userId}", tags=["Health Report"])
-async def get_health_reports_by_user_id(userId: int):
-    reports = fetch_health_reports_by_user_id(userId=userId)
-    return {"user_health_reports": reports}
+# ================================
+#    HEALTH CONDITION
+# ================================
 
 
-@app.post("/health_report/add/{userId}", tags=["Health Report"])
-async def add_user_health_report(report: HealthReport):
-    insert_user_health_report(report=report)
-    return {"message": "Add user's health report successfully"}
+@app.get("/health/{userId}", tags=["Health"])
+async def get_health_conditions_by_user_id(userId: int):
+    return {"user_health_conditions": fetch_health_conditions_by_user_id(userId=userId)}
 
 
-# ==== Session ====
-@app.post("/session/get/{userId}", tags=["Session"])
+@app.post("/health/{userId}", tags=["Health"])
+async def add_user_health_report(userId: int, healthCondition: HealthCondition):
+    insert_user_health_condition(userId=userId, healthCondition=healthCondition)
+    return {"message": "Add user's health condition successfully"}
+
+
+@app.delete("/health/{userId}/{createdAt}", tags=["Health"])
+async def delete_health_condition(userId: int, createdAt: str):
+    delete_health_condition(userId=userId, createdAt=createdAt)
+    return {"message": "Delete health condition successfully"}
+
+
+# =======================
+#        SESSION
+# =======================
+
+
+@app.get("/sessions/{userId}", tags=["Session"])
 async def get_user_sessions(userId: int):
-    sessions = fetch_sessions_by_user_id(userId=userId)
-    return {"sessions": sessions}
+    return {"sessions": fetch_sessions_by_user_id(userId=userId)}
 
 
-@app.post("/session/add/{userId}", tags=["Session"])
+@app.post("/sessions/{userId}", tags=["Session"])
 async def add_user_session(userId: int, session: Session):
     insert_session(userId=userId, session=session)
     return {"message": "Add user's session successfully"}
 
 
-@app.post("/session/update/{userId}/{sessionId}", tags=["Session"])
+@app.put("/sessions/{userId}/{sessionId}", tags=["Session"])
 async def update_user_session(userId: int, sessionId: int, session: Session):
     update_session(userId=userId, sessionId=sessionId, session=session)
     return {"message": "Update user's session successfully"}
 
 
-@app.post("/session/add/exercise", tags=["Session Exercise"])
+@app.delete("/sessions/{userId}/{sessionId}", tags=["Session"])
+async def delete_user_session(userId: int, sessionId: int):
+    delete_session(userId=userId, sessionId=sessionId)
+    return {"message": "Delete user's session successfully"}
+
+
+# =======================
+#    SESSION EXERCISE
+# =======================
+
+
+@app.post("/sessions/exercises", tags=["Session Exercise"])
 async def add_session_exercise(sessionExercise: SessionExercise):
     insert_session_exercise(sessionExercise=sessionExercise)
     return {"message": "Add exercise to session successfully"}
 
 
-# ==== Exercise ====
-@app.get("/exercise/get", tags=["Exercise"])
+@app.delete("/sessions/exercises/{sessionId}/{exerciseName}", tags=["Session Exercise"])
+async def delete_session_exercise(sessionId: int, exerciseName: str):
+    delete_session_exercise(sessionId=sessionId, exerciseName=exerciseName)
+    return {"message": "Delete session exercise successfully"}
+
+
+# =======================
+#        EXERCISE
+# =======================
+
+
+@app.get("/exercises", tags=["Exercise"])
 async def get_exercises():
-    exercises = fetch_exercises()
-    return {"excercises": exercises}
+    return {"exercises": fetch_exercises()}
 
 
-@app.get("/exercise/get/{exerciseName}", tags=["Exercise"])
+@app.get("/exercises/{exerciseName}", tags=["Exercise"])
 async def get_exercise_by_name(exerciseName: str):
-    exercise = fetch_exercise_by_name(exerciseName=exerciseName)
-    return {"exercise": exercise}
+    return {"exercise": fetch_exercise_by_name(exerciseName=exerciseName)}
 
 
-@app.get("/exercise/aerobics/get", tags=["Exercise"])
+# =======================
+#        AEROBICS
+# =======================
+
+
+@app.get("/exercises/aerobics", tags=["Exercise"])
 async def get_aerobics():
-    aerobics = fetch_aerobics()
-    return {"aerobics": aerobics}
+    return {"aerobics": fetch_aerobics()}
 
 
-@app.get("/exercise/aerobics/get/{aerobicsName}", tags=["Exercise"])
+@app.get("/exercises/aerobics/{aerobicsName}", tags=["Aerobics"])
 async def get_aerobics_by_name(aerobicsName: str):
-    aerobics = fetch_aerobics_by_name(aerobicsName=aerobicsName)
-    return {"aerobics": aerobics}
+    return {"aerobics": fetch_aerobics_by_name(aerobicsName=aerobicsName)}
 
 
-@app.get("/exercise/lifting/get", tags=["Exercise"])
+@app.post("/exercises/aerobics/{aerobicsName}/metrics/{sessionId}", tags=["Aerobics"])
+async def add_aerobics_metric(aerobicsName: str, sessionId: int, metric: Metric):
+    insert_aerobics_metric(
+        sessionId=sessionId, aerobicsName=aerobicsName, metric=metric
+    )
+    return {"message": "Add metric successfully"}
+
+
+@app.get("/exercises/aerobics/{aerobicsName}/metrics/{sessionId}", tags=["Aerobics"])
+async def get_aerobics_metrics(aerobicsName: str, sessionId: int):
+    return {"metrics": fetch_metrics(aerobicsName=aerobicsName, sessionId=sessionId)}
+
+
+@app.put("/exercises/aerobics/{aerobicsName}/metrics/{sessionId}", tags=["Aerobics"])
+async def update_aerobics_metric(aerobicsName: str, sessionId: int, metric: Metric):
+    update_aerobics_metric(
+        sessionId=sessionId, aerobicsName=aerobicsName, metric=metric
+    )
+    return {"message": "Update metric successfully"}
+
+
+@app.delete("/exercises/aerobics/{aerobicsName}/metrics/{sessionId}", tags=["Aerobics"])
+async def delete_aerobics_metric(aerobicsName: str, sessionId: int):
+    delete_aerobics_metric(sessionId=sessionId, aerobicsName=aerobicsName)
+    return {"message": "Delete metric successfully"}
+
+
+# =======================
+#         LIFTING
+# =======================
+
+
+@app.get("/exercises/lifting", tags=["Lifting"])
 async def get_liftings():
-    liftings = fetch_liftings()
-    return {"liftings": liftings}
+    return {"liftings": fetch_liftings()}
 
 
-@app.get("/exercise/lifting/get/{liftingName}", tags=["Exercise"])
+@app.get("/exercises/lifting/{liftingName}", tags=["Lifting"])
 async def get_lifting_by_name(liftingName: str):
-    lifting = fetch_lifting_by_name(liftingName=liftingName)
-    return {"lifting": lifting}
+    return {"lifting": fetch_lifting_by_name(liftingName=liftingName)}
 
 
-@app.get("/exercise/lifting/set/get", tags=["Exercise"])
-async def get_lifting_sets():
-    sets = fetch_sets()
-    return {"sets": sets}
+@app.post("/exercises/lifting/{liftingName}/sets/{sessionId}", tags=["Lifting"])
+async def add_lifting_set(liftingName: str, sessionId: int, set: Set):
+    insert_lifting_set(sessionId=sessionId, liftingName=liftingName, set=set)
+    return {"message": "Add set successfully"}
 
 
-@app.get("/exercise/lifting/set/add/{liftingName}", tags=["Exercise"])
-async def add_lifting_set(liftingName: str, set: Set):
-    fetch_sets(liftingName=liftingName, set=set)
-    return {"message": "Add set to exercise successfully"}
+@app.get("/exercises/lifting/{liftingName}/sets/{sessionId}", tags=["Lifting"])
+async def get_lifting_sets(liftingName: str, sessionId: int):
+    return {"sets": fetch_sets(liftingName=liftingName, sessionId=sessionId)}
 
 
-@app.get("/exercise/lifting/equipment/get/{liftingName}", tags=["Exercise"])
+@app.put("/exercises/lifting/{liftingName}/sets/{sessionId}/{setNum}", tags=["Lifting"])
+async def update_lifting_set(liftingName: str, sessionId: int, setNum: int, set: Set):
+    update_lifting_set(
+        sessionId=sessionId, liftingName=liftingName, setNum=setNum, set=set
+    )
+    return {"message": "Update set successfully"}
+
+
+@app.delete(
+    "/exercises/lifting/{liftingName}/sets/{sessionId}/{setNum}", tags=["Lifting"]
+)
+async def delete_lifting_set(liftingName: str, sessionId: int, setNum: int):
+    delete_lifting_set(sessionId=sessionId, liftingName=liftingName, setNum=setNum)
+    return {"message": "Delete set successfully"}
+
+
+@app.get("/exercises/lifting/{liftingName}/equipment", tags=["Lifting"])
 async def get_lifting_equipments(liftingName: str):
-    equipments = fetch_equipments_by_lifting_name(liftingName=liftingName)
-    return {"equipments": equipments}
+    return {"equipments": fetch_equipments_by_lifting_name(liftingName=liftingName)}
 
 
-@app.get("/exercise/equipment/get/{equipmentName}", tags=["Exercise"])
-async def get_equipment_liftings(equipmentName: str):
-    liftings = fetch_liftings_by_equipment_name(equipmentName=equipmentName)
-    return {"liftings": liftings}
+@app.get("/equipment/{equipmentName}/lifting", tags=["Lifting"])
+async def get_liftings_by_equipment(equipmentName: str):
+    return {"liftings": fetch_liftings_by_equipment_name(equipmentName=equipmentName)}
 
 
-@app.get("/exercise/lifting/muscle/get/{liftingName}", tags=["Exercise"])
+@app.get("/exercises/lifting/{liftingName}/muscles", tags=["Lifting"])
 async def get_lifting_muscles(liftingName: str):
-    muscles = fetch_muscles_by_lifting_name(liftingName=liftingName)
-    return {"muscles": muscles}
+    return {"muscles": fetch_muscles_by_lifting_name(liftingName=liftingName)}
 
 
-@app.get("/exercise/muscle/get/{muscleName}", tags=["Exercise"])
+@app.get("/muscles/{muscleName}/lifting", tags=["Lifting"])
 async def get_muscle_liftings(muscleName: str):
-    liftings = fetch_liftings_by_muscle_name(muscleName=muscleName)
-    return {"liftings": liftings}
+    return {"liftings": fetch_liftings_by_muscle_name(muscleName=muscleName)}
 
 
-# ==== Muscle ====
-@app.get("/muscle/group/get/{muscleName}", tags=["Muscle"])
+# =======================
+#         MUSCLES
+# =======================
+
+
+@app.get("/muscles/{muscleName}/group", tags=["Muscle"])
 async def get_muscle_group(muscleName: str):
-    muscleGroup = fetch_muscle_group(muscleName=muscleName)
-    return {"muscle group": muscleGroup}
+    return {"muscle_group": fetch_muscle_group(muscleName=muscleName)}
 
 
-@app.get("/group/get/{groupName}", tags=["Muscle"])
-async def get_group_muscle(groupName: str):
-    muscles = fetch_group_muscle(groupName=groupName)
-    return {"muscles": muscles}
+@app.get("/muscle-groups/{groupName}/muscles", tags=["Muscle"])
+async def get_group_muscles(groupName: str):
+    return {"muscles": fetch_group_muscle(groupName=groupName)}
