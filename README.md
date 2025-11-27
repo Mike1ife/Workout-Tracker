@@ -70,7 +70,7 @@ Modify `create_database.sql`
 <img width="1186" height="1074" alt="image" src="https://github.com/user-attachments/assets/116a8ecc-99ae-4ffe-bbd8-36b8efbb9b32" />
 
 ## UML
-<img width="1483" height="1273" alt="image" src="https://github.com/user-attachments/assets/ed0c9d43-6be5-4a99-82ce-e799f4244e53" />
+<img width="1490" height="1250" alt="image" src="https://github.com/user-attachments/assets/d54e936b-3e00-454a-98a0-656f8ca1a4dd" />
 
 # Tony
 Frontend (React)
