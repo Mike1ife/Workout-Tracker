@@ -69,6 +69,9 @@ Modify `create_database.sql`
 ## ERD
 <img width="1186" height="1074" alt="image" src="https://github.com/user-attachments/assets/116a8ecc-99ae-4ffe-bbd8-36b8efbb9b32" />
 
+## UML
+<img width="1483" height="1273" alt="image" src="https://github.com/user-attachments/assets/ed0c9d43-6be5-4a99-82ce-e799f4244e53" />
+
 # Tony
 Frontend (React)
 
