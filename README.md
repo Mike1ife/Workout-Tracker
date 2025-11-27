@@ -8,16 +8,15 @@ Modify `create_database.sql`
 
 `user`
 - user_id {PK}
-- name
+- first_name
+- last_name
 - email
 - age
 - gender
 
 `session`
 - session_id {PK}
-- start_date
 - start_time
-- end_date
 - end_time
 - note
 
@@ -32,6 +31,7 @@ Modify `create_database.sql`
 
 `food`
 - food_name {PK}
+- calories
 - carbohydrate
 - protein
 - fat
@@ -67,7 +67,7 @@ Modify `create_database.sql`
 - type
 
 ## ERD
-<img width="1237" height="1101" alt="image" src="https://github.com/user-attachments/assets/3cffc645-e71b-4d7b-85ad-abfdf3dfbcbb" />
+<img width="1186" height="1074" alt="image" src="https://github.com/user-attachments/assets/116a8ecc-99ae-4ffe-bbd8-36b8efbb9b32" />
 
 # Tony
 Frontend (React)
