@@ -1,12 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from utils import *
 
 app = FastAPI()
-
-
-# =======================
-#        USER
-# =======================
 
 
 @app.get("/", tags=["User"])
@@ -40,11 +35,6 @@ async def update_user_by_id(userId: int, user: User):
 async def delete_user_by_id(userId: int):
     delete_user(userId=userId)
     return {"message": "Delete user successfully"}
-
-
-# =======================
-#        FOOD
-# =======================
 
 
 @app.get("/foods", tags=["Food"])
@@ -86,11 +76,6 @@ async def delete_food_by_name(foodName: str):
     return {"message": "Delete food successfully"}
 
 
-# ================================
-#    HEALTH CONDITION
-# ================================
-
-
 @app.get("/health/{userId}", tags=["Health"])
 async def get_health_conditions_by_user_id(userId: int):
     return {"user_health_conditions": fetch_health_conditions_by_user_id(userId=userId)}
@@ -106,11 +91,6 @@ async def add_user_health_report(userId: int, healthCondition: HealthCondition):
 async def delete_health_condition(userId: int, createdAt: str):
     delete_health_condition(userId=userId, createdAt=createdAt)
     return {"message": "Delete health condition successfully"}
-
-
-# =======================
-#        SESSION
-# =======================
 
 
 @app.get("/sessions/{userId}", tags=["Session"])
@@ -136,11 +116,6 @@ async def delete_user_session(userId: int, sessionId: int):
     return {"message": "Delete user's session successfully"}
 
 
-# =======================
-#    SESSION EXERCISE
-# =======================
-
-
 @app.post("/sessions/exercises", tags=["Session Exercise"])
 async def add_session_exercise(sessionExercise: SessionExercise):
     insert_session_exercise(sessionExercise=sessionExercise)
@@ -153,11 +128,6 @@ async def delete_session_exercise(sessionId: int, exerciseName: str):
     return {"message": "Delete session exercise successfully"}
 
 
-# =======================
-#        EXERCISE
-# =======================
-
-
 @app.get("/exercises", tags=["Exercise"])
 async def get_exercises():
     return {"exercises": fetch_exercises()}
@@ -168,9 +138,14 @@ async def get_exercise_by_name(exerciseName: str):
     return {"exercise": fetch_exercise_by_name(exerciseName=exerciseName)}
 
 
-# =======================
-#        AEROBICS
-# =======================
+@app.get("/exercises/{exerciseName}/equipment", tags=["Exercise"])
+async def get_exercise_equipments(exerciseName: str):
+    return {"equipments": fetch_equipments_by_exercise_name(exerciseName=exerciseName)}
+
+
+@app.get("/equipment/{equipmentName}/exercise", tags=["Exercise"])
+async def get_exercise_by_equipment(equipmentName: str):
+    return {"exercises": fetch_exercise_by_equipment_name(equipmentName=equipmentName)}
 
 
 @app.get("/exercises/aerobics", tags=["Exercise"])
@@ -210,11 +185,6 @@ async def delete_aerobics_metric(aerobicsName: str, sessionId: int):
     return {"message": "Delete metric successfully"}
 
 
-# =======================
-#         LIFTING
-# =======================
-
-
 @app.get("/exercises/lifting", tags=["Lifting"])
 async def get_liftings():
     return {"liftings": fetch_liftings()}
@@ -252,16 +222,6 @@ async def delete_lifting_set(liftingName: str, sessionId: int, setNum: int):
     return {"message": "Delete set successfully"}
 
 
-@app.get("/exercises/lifting/{liftingName}/equipment", tags=["Lifting"])
-async def get_lifting_equipments(liftingName: str):
-    return {"equipments": fetch_equipments_by_lifting_name(liftingName=liftingName)}
-
-
-@app.get("/equipment/{equipmentName}/lifting", tags=["Lifting"])
-async def get_liftings_by_equipment(equipmentName: str):
-    return {"liftings": fetch_liftings_by_equipment_name(equipmentName=equipmentName)}
-
-
 @app.get("/exercises/lifting/{liftingName}/muscles", tags=["Lifting"])
 async def get_lifting_muscles(liftingName: str):
     return {"muscles": fetch_muscles_by_lifting_name(liftingName=liftingName)}
@@ -270,11 +230,6 @@ async def get_lifting_muscles(liftingName: str):
 @app.get("/muscles/{muscleName}/lifting", tags=["Lifting"])
 async def get_muscle_liftings(muscleName: str):
     return {"liftings": fetch_liftings_by_muscle_name(muscleName=muscleName)}
-
-
-# =======================
-#         MUSCLES
-# =======================
 
 
 @app.get("/muscles/{muscleName}/group", tags=["Muscle"])

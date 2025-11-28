@@ -21,6 +21,7 @@ class Food(BaseModel):
 class UserFoodLog(BaseModel):
     userId: int
     foodName: str
+    createAt: Optional[str]
 
 
 class HealthCondition(BaseModel):

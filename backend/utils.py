@@ -1,5 +1,7 @@
 import pymysql
 from typing import List
+from fastapi import HTTPException
+
 from shcema import *
 
 conn = pymysql.connect(
@@ -7,212 +9,310 @@ conn = pymysql.connect(
     user="root",
     password="daiguangyi123",
     database="workout_tracker",
+    cursorclass=pymysql.cursors.DictCursor,
 )
 
-# =======================
-#        USER
-# =======================
+
+def _call_proc(proc_name: str, params: tuple = ()):
+    try:
+        with conn.cursor() as cursor:
+            cursor.callproc(proc_name, params)
+
+            # fetch SP result (if any)
+            result = cursor.fetchall()
+
+        conn.commit()
+        return result
+
+    except pymysql.err.IntegrityError as e:
+        # Handles:
+        # - FOREIGN KEY constraint fails
+        # - UNIQUE constraint fails
+        # - CHECK constraint fails
+        # - NOT NULL constraint
+        # - Duplicate PK insert
+        msg = str(e)
+
+        if "FOREIGN KEY" in msg:
+            raise HTTPException(status_code=400, detail="Foreign key constraint failed")
+        if "Duplicate entry" in msg:
+            raise HTTPException(status_code=400, detail="Duplicate entry")
+        if "CHECK constraint" in msg:
+            raise HTTPException(
+                status_code=400, detail="Value violates CHECK constraint"
+            )
+
+        raise HTTPException(status_code=400, detail=f"Integrity error: {msg}")
+
+    except pymysql.err.ProgrammingError as e:
+        # Handles:
+        # - Stored procedure not found
+        # - Wrong number of parameters
+        raise HTTPException(
+            status_code=500, detail=f"Database programming error: {str(e)}"
+        )
+
+    except pymysql.err.InternalError as e:
+        # Handles:
+        # - SIGNAL SQLSTATE '45000'
+        # - Custom SIGNAL messages from SP
+        sqlstate = e.args[0]
+        msg = e.args[1]
+
+        if sqlstate == 1644:  # MySQL uses 1644 for SIGNAL
+            raise HTTPException(status_code=400, detail=msg)
+
+        raise HTTPException(status_code=500, detail=f"Database internal error: {msg}")
+
+    except Exception as e:
+        # fallback for unknown errors
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
 def fetch_all_users() -> List[User]:
-    pass
+    rows = _call_proc("sp_fetch_all_users")
+    return [User(**row) for row in rows]
 
 
 def fetch_user_by_id(userId: int) -> User:
-    pass
+    rows = _call_proc("sp_fetch_user_by_id", (userId,))
+    return User(**rows[0])
 
 
 def insert_user(user: User):
-    pass
+    _call_proc(
+        "sp_insert_user",
+        (user.first_name, user.last_name, user.email, user.age, user.gender),
+    )
 
 
 def update_user(userId: int, user: User):
-    pass
+    _call_proc(
+        "sp_update_user",
+        (userId, user.first_name, user.last_name, user.email, user.age, user.gender),
+    )
 
 
 def delete_user(userId: int):
-    pass
-
-
-# =======================
-#        FOOD
-# =======================
+    _call_proc("sp_delete_user", (userId,))
 
 
 def fetch_all_foods() -> List[Food]:
-    pass
+    rows = _call_proc("sp_fetch_all_foods")
+    return [Food(**row) for row in rows]
 
 
 def fetch_food(foodName: str) -> Food:
-    pass
+    rows = _call_proc("sp_fetch_food", (foodName,))
+    return Food(**rows[0])
 
 
 def fetch_foods_by_user_id(userId: int) -> List[Food]:
-    pass
+    rows = _call_proc("sp_fetch_foods_by_user_id", (userId,))
+    return [
+        Food(
+            **{
+                "foodName": row["food_name"],
+                "calories": row["calories"],
+                "carbohydrate": row["carbohydrate"],
+                "protein": row["protein"],
+                "fat": row["fat"],
+            }
+        )
+        for row in rows
+    ]
 
 
 def insert_food(food: Food):
-    pass
+    _call_proc(
+        "sp_insert_food", (food.foodName, food.carbohydrate, food.protein, food.fat)
+    )
 
 
 def insert_user_food_log(userFoodLog: UserFoodLog):
-    pass
+    _call_proc(
+        "sp_insert_user_food_log",
+        (userFoodLog.userId, userFoodLog.foodName, userFoodLog.createAt),
+    )
 
 
 def update_food(foodName: str, food: Food):
-    pass
+    _call_proc("sp_update_food", (foodName, food.carbohydrate, food.protein, food.fat))
 
 
 def delete_food(foodName: str):
-    pass
-
-
-# =======================
-#    HEALTH CONDITION
-# =======================
+    _call_proc("sp_delete_food", (foodName,))
 
 
 def fetch_health_conditions_by_user_id(userId: int) -> List[HealthCondition]:
-    pass
+    rows = _call_proc("sp_fetch_health_conditions_by_user_id", (userId,))
+    return [
+        HealthCondition(
+            **{
+                "createdAt": row["create_at"],
+                "weight": row["weight"],
+                "body_fat_percent": row["body_fat_percent"],
+            }
+        )
+        for row in rows
+    ]
 
 
 def insert_user_health_condition(userId: int, healthCondition: HealthCondition):
-    pass
+    _call_proc(
+        "sp_insert_user_health_condition",
+        (
+            userId,
+            healthCondition.createdAt,
+            healthCondition.weight,
+            healthCondition.body_fat_percent,
+        ),
+    )
 
 
 def delete_health_condition(userId: int, createdAt: str):
-    pass
-
-
-# =======================
-#        SESSION
-# =======================
+    _call_proc("sp_delete_health_condition", (userId, createdAt))
 
 
 def fetch_sessions_by_user_id(userId: int) -> List[Session]:
-    pass
+    rows = _call_proc("sp_fetch_sessions_by_user_id", (userId,))
+    return [
+        Session(startTime=row["start_time"], endTime=row["end_time"], note=row["note"])
+        for row in rows
+    ]
 
 
 def insert_session(userId: int, session: Session):
-    pass
+    _call_proc(
+        "sp_insert_session", (userId, session.startTime, session.endTime, session.note)
+    )
 
 
 def update_session(userId: int, sessionId: int, session: Session):
-    pass
+    _call_proc(
+        "sp_update_session",
+        (userId, sessionId, session.startTime, session.endTime, session.note),
+    )
 
 
 def delete_session(userId: int, sessionId: int):
-    pass
-
-
-# =======================
-#    SESSION EXERCISE
-# =======================
+    _call_proc("sp_delete_session", (userId, sessionId))
 
 
 def insert_session_exercise(sessionExercise: SessionExercise):
-    pass
+    _call_proc(
+        "sp_insert_session_exercise",
+        (sessionExercise.sessionId, sessionExercise.exerciseName),
+    )
 
 
 def delete_session_exercise(sessionId: int, exerciseName: str):
-    pass
-
-
-# =======================
-#        EXERCISE
-# =======================
+    _call_proc("sp_delete_session_exercise", (sessionId, exerciseName))
 
 
 def fetch_exercises() -> List[Exercise]:
-    pass
+    rows = _call_proc("sp_fetch_exercises")
+    return [Exercise(**row) for row in rows]
 
 
 def fetch_exercise_by_name(exerciseName: str) -> Exercise:
-    pass
+    rows = _call_proc("sp_fetch_exercise_by_name", (exerciseName,))
+    return Exercise(**rows[0])
 
 
-# =======================
-#         AEROBICS
-# =======================
+def fetch_equipments_by_exercise_name(exerciseName: str) -> List[Equipment]:
+    rows = _call_proc("sp_fetch_equipments_by_exercise_name", (exerciseName,))
+    return [Equipment(**row) for row in rows]
+
+
+def fetch_exercise_by_equipment_name(equipmentName: str) -> List[Exercise]:
+    rows = _call_proc("sp_fetch_exercise_by_equipment_name", (equipmentName,))
+    return [Exercise(**row) for row in rows]
 
 
 def fetch_aerobics() -> List[Exercise]:
-    pass
+    rows = _call_proc("sp_fetch_aerobics")
+    return [Exercise(**row) for row in rows]
 
 
 def fetch_aerobics_by_name(aerobicsName: str) -> Exercise:
-    pass
+    rows = _call_proc("sp_fetch_aerobics_by_name", (aerobicsName,))
+    return Exercise(**rows[0])
 
 
 def insert_aerobics_metric(sessionId: int, aerobicsName: str, metric: Metric):
-    pass
+    _call_proc(
+        "sp_insert_aerobics_metric",
+        (sessionId, aerobicsName, metric.duration, metric.distance),
+    )
 
 
 def fetch_metrics(aerobicsName: str, sessionId: int) -> List[Metric]:
-    pass
+    rows = _call_proc("sp_fetch_metrics", (aerobicsName, sessionId))
+    return [Metric(**row) for row in rows]
 
 
 def update_aerobics_metric(sessionId: int, aerobicsName: str, metric: Metric):
-    pass
+    _call_proc(
+        "sp_update_aerobics_metric",
+        (sessionId, aerobicsName, metric.duration, metric.distance),
+    )
 
 
 def delete_aerobics_metric(sessionId: int, aerobicsName: str):
-    pass
-
-
-# =======================
-#         LIFTING
-# =======================
+    _call_proc("sp_delete_aerobics_metric", (sessionId, aerobicsName))
 
 
 def fetch_liftings() -> List[Exercise]:
-    pass
+    rows = _call_proc("sp_fetch_liftings")
+    return [Exercise(**row) for row in rows]
 
 
 def fetch_lifting_by_name(liftingName: str) -> Exercise:
-    pass
+    rows = _call_proc("sp_fetch_lifting_by_name", (liftingName,))
+    return Exercise(**rows[0])
 
 
 def insert_lifting_set(sessionId: int, liftingName: str, set: Set):
-    pass
+    _call_proc(
+        "sp_insert_lifting_set",
+        (sessionId, liftingName, set.setNum, set.weight, set.reps),
+    )
 
 
 def fetch_sets(liftingName: str, sessionId: int) -> List[Set]:
-    pass
+    rows = _call_proc("sp_fetch_sets", (liftingName, sessionId))
+    return [
+        Set(setNum=row["set_num"], weight=row["weight"], reps=row["reps"])
+        for row in rows
+    ]
 
 
 def update_lifting_set(sessionId: int, liftingName: str, setNum: int, set: Set):
-    pass
+    _call_proc(
+        "sp_update_lifting_set", (sessionId, liftingName, setNum, set.weight, set.reps)
+    )
 
 
 def delete_lifting_set(sessionId: int, liftingName: str, setNum: int):
-    pass
-
-
-def fetch_equipments_by_lifting_name(liftingName: str) -> List[Equipment]:
-    pass
-
-
-def fetch_liftings_by_equipment_name(equipmentName: str) -> List[Exercise]:
-    pass
+    _call_proc("sp_delete_lifting_set", (sessionId, liftingName, setNum))
 
 
 def fetch_muscles_by_lifting_name(liftingName: str) -> List[Muscle]:
-    pass
+    rows = _call_proc("sp_fetch_muscles_by_lifting_name", (liftingName,))
+    return [Muscle(**row) for row in rows]
 
 
 def fetch_liftings_by_muscle_name(muscleName: str) -> List[Exercise]:
-    pass
-
-
-# =======================
-#         MUSCLE
-# =======================
+    rows = _call_proc("sp_fetch_liftings_by_muscle_name", (muscleName,))
+    return [Exercise(**row) for row in rows]
 
 
 def fetch_muscle_group(muscleName: str) -> MuscleGroup:
-    pass
+    rows = _call_proc("sp_fetch_muscle_group", (muscleName,))
+    return MuscleGroup(**rows[0])
 
 
 def fetch_group_muscle(groupName: str) -> List[Muscle]:
-    pass
+    rows = _call_proc("sp_fetch_group_muscle", (groupName,))
+    return [Muscle(**row) for row in rows]

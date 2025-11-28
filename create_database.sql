@@ -31,7 +31,8 @@ CREATE TABLE food (
 CREATE TABLE user_food (
   user_id INT NOT NULL,
   food_name VARCHAR(64) NOT NULL,
-  CONSTRAINT user_food_pk PRIMARY KEY (user_id, food_name),
+  create_at DATETIME DEFAULT NOW(),
+  CONSTRAINT user_food_pk PRIMARY KEY (user_id, food_name, create_at),
   CONSTRAINT user_food_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
   CONSTRAINT user_food_food_fk FOREIGN KEY (food_name) REFERENCES food(food_name)
@@ -72,12 +73,30 @@ CREATE TABLE exercise(
   CONSTRAINT exercise_pk PRIMARY KEY(exercise_name)
 );
 
+-- Equipment
+CREATE TABLE equipment(
+  equipment_name VARCHAR(64) NOT NULL,
+  description VARCHAR(256),
+  CONSTRAINT equipment_pk PRIMARY KEY(equipment_name)
+);
+
+-- Exercise Equipment
+CREATE TABLE exercise_equipment (
+  exercise_name  VARCHAR(64) NOT NULL,
+  equipment_name VARCHAR(64) NOT NULL,
+  CONSTRAINT exercise_equipment_pk PRIMARY KEY (exercise_name, equipment_name),
+  CONSTRAINT exercise_equipment_exercise_fk FOREIGN KEY (exercise_name) REFERENCES exercise(exercise_name)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT exercise_equipment_equipment_fk FOREIGN KEY (equipment_name) REFERENCES equipment(equipment_name)
+    ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 -- Session Exercise
 CREATE TABLE session_exercise(
 	session_id INT NOT NULL,
-    exercise_name VARCHAR(64) NOT NULL,
-    CONSTRAINT session_exercise_pk PRIMARY KEY(session_id, exercise_name),
-    CONSTRAINT session_exercise_session_fk FOREIGN KEY(session_id) REFERENCES user_session(session_id)
+  exercise_name VARCHAR(64) NOT NULL,
+  CONSTRAINT session_exercise_pk PRIMARY KEY(session_id, exercise_name),
+  CONSTRAINT session_exercise_session_fk FOREIGN KEY(session_id) REFERENCES user_session(session_id)
 	  ON UPDATE CASCADE ON DELETE CASCADE,
 	CONSTRAINT session_exercise_exercise_fk FOREIGN KEY(exercise_name) REFERENCES exercise(exercise_name)
 	  ON UPDATE CASCADE ON DELETE CASCADE
@@ -88,24 +107,6 @@ CREATE TABLE lifting(
   exercise_name VARCHAR(64) NOT NULL,
   CONSTRAINT lifting_pk PRIMARY KEY(exercise_name),
   CONSTRAINT lifting_fk FOREIGN KEY(exercise_name) REFERENCES exercise(exercise_name)
-    ON UPDATE CASCADE ON DELETE CASCADE
-);
-
--- Equipment
-CREATE TABLE equipment(
-  equipment_name VARCHAR(64) NOT NULL,
-  description VARCHAR(256),
-  CONSTRAINT equipment_pk PRIMARY KEY(equipment_name)
-);
-
--- Lifting Equipment
-CREATE TABLE lifting_equipment (
-  exercise_name  VARCHAR(64) NOT NULL,
-  equipment_name VARCHAR(64) NOT NULL,
-  CONSTRAINT lifting_equipment_pk PRIMARY KEY (exercise_name, equipment_name),
-  CONSTRAINT lifting_equipment_lifting_fk FOREIGN KEY (exercise_name) REFERENCES lifting(exercise_name)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT lifting_equipment_equipment_fk FOREIGN KEY (equipment_name) REFERENCES equipment(equipment_name)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -128,7 +129,7 @@ CREATE TABLE muscle(
 -- Lifting Muscle
 CREATE TABLE lifting_muscle (
   exercise_name VARCHAR(64) NOT NULL,
-  muscle_name   VARCHAR(64) NOT NULL,
+  muscle_name VARCHAR(64) NOT NULL,
   CONSTRAINT lifting_muscle_pk PRIMARY KEY (exercise_name, muscle_name),
   CONSTRAINT lifting_muscle_lifting_fk FOREIGN KEY (exercise_name) REFERENCES lifting(exercise_name)
     ON UPDATE CASCADE ON DELETE CASCADE,
@@ -141,7 +142,7 @@ CREATE TABLE lifting_set (
   session_id INT NOT NULL,
   exercise_name VARCHAR(64) NOT NULL,
   set_num INT NOT NULL,
-  weight DECIMAL(5,2) NOT NULL,
+  weight DECIMAL(5,2),
   reps INT NOT NULL,
   CONSTRAINT lifting_set_num_chk CHECK (set_num >= 1),
   CONSTRAINT lifting_weight_chk CHECK (weight >= 0),
@@ -174,3 +175,651 @@ CREATE TABLE aerobics_metric (
   CONSTRAINT aerobics_metric_aerobics_fk FOREIGN KEY (exercise_name) REFERENCES aerobics(exercise_name)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+-- Stored Procedure for Backend
+
+DELIMITER $$
+
+CREATE PROCEDURE sp_fetch_all_users()
+BEGIN
+    SELECT * FROM users;
+END $$
+
+CREATE PROCEDURE sp_fetch_user_by_id(IN p_user_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    SELECT * FROM users
+    WHERE user_id = p_user_id;
+END $$
+
+CREATE PROCEDURE sp_insert_user(
+    IN p_first_name VARCHAR(64),
+    IN p_last_name VARCHAR(64),
+    IN p_email VARCHAR(128),
+    IN p_age INT,
+    IN p_gender ENUM('Male', 'Female', 'Other')
+)
+BEGIN
+    INSERT INTO users (first_name, last_name, email, age, gender)
+    VALUES (p_first_name, p_last_name, p_email, p_age, p_gender);
+END $$
+
+CREATE PROCEDURE sp_update_user(
+    IN p_user_id INT,
+    IN p_first_name VARCHAR(64),
+    IN p_last_name VARCHAR(64),
+    IN p_email VARCHAR(128),
+    IN p_age INT,
+    IN p_gender ENUM('Male', 'Female', 'Other')
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    UPDATE users
+    SET first_name = p_first_name,
+        last_name = p_last_name,
+        email = p_email,
+        age = p_age,
+        gender = p_gender
+    WHERE user_id = p_user_id;
+END $$
+
+CREATE PROCEDURE sp_delete_user(IN p_user_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    DELETE FROM users
+    WHERE user_id = p_user_id;
+END $$
+
+CREATE PROCEDURE sp_fetch_all_foods()
+BEGIN
+    SELECT * FROM food;
+END $$
+
+CREATE PROCEDURE sp_fetch_food(IN p_food_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM food WHERE food_name = p_food_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Food does not exist';
+    END IF;
+
+    SELECT * FROM food
+    WHERE food_name = p_food_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_foods_by_user_id(IN p_user_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    SELECT f.*, uf.create_at
+    FROM user_food AS uf
+    JOIN food AS f ON uf.food_name = f.food_name
+    WHERE uf.user_id = p_user_id;
+END $$
+
+CREATE PROCEDURE sp_insert_food(
+    IN p_food_name VARCHAR(64),
+    IN p_carbohydrate DECIMAL(5,2),
+    IN p_protein DECIMAL(5,2),
+    IN p_fat DECIMAL(5,2)
+)
+BEGIN
+    INSERT INTO food (food_name, carbohydrate, protein, fat)
+    VALUES (p_food_name, p_carbohydrate, p_protein, p_fat);
+END $$
+
+CREATE PROCEDURE sp_insert_user_food_log(
+    IN p_user_id INT,
+    IN p_food_name VARCHAR(64),
+    IN p_create_at DATETIME
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM food WHERE food_name = p_food_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Food does not exist';
+    END IF;
+
+    INSERT INTO user_food (user_id, food_name, create_at)
+    VALUES (p_user_id, p_food_name, p_create_at);
+END $$
+
+CREATE PROCEDURE sp_update_food(
+    IN p_food_name VARCHAR(64),
+    IN p_carbohydrate DECIMAL(5,2),
+    IN p_protein DECIMAL(5,2),
+    IN p_fat DECIMAL(5,2)
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM food WHERE food_name = p_food_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Food does not exist';
+    END IF;
+
+    UPDATE food
+    SET carbohydrate = p_carbohydrate,
+        protein = p_protein,
+        fat = p_fat
+    WHERE food_name = p_food_name;
+END $$
+
+CREATE PROCEDURE sp_delete_food(IN p_food_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM food WHERE food_name = p_food_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Food does not exist';
+    END IF;
+
+    DELETE FROM food
+    WHERE food_name = p_food_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_health_conditions_by_user_id(IN p_user_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    SELECT *
+    FROM health_condition
+    WHERE user_id = p_user_id
+    ORDER BY create_at DESC;
+END $$
+
+CREATE PROCEDURE sp_insert_user_health_condition(
+    IN p_user_id INT,
+    IN p_create_at DATETIME,
+    IN p_weight DECIMAL(5,2),
+    IN p_body_fat_percent DECIMAL(5,2)
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    INSERT INTO health_condition (user_id, create_at, weight, body_fat_percent)
+    VALUES (p_user_id, p_create_at, p_weight, p_body_fat_percent);
+END $$
+
+CREATE PROCEDURE sp_delete_health_condition(
+    IN p_user_id INT,
+    IN p_create_at DATETIME
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM health_condition
+        WHERE user_id = p_user_id AND create_at = p_create_at
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Health condition record does not exist';
+    END IF;
+
+    DELETE FROM health_condition
+    WHERE user_id = p_user_id
+      AND create_at = p_create_at;
+END $$
+
+CREATE PROCEDURE sp_fetch_sessions_by_user_id(IN p_user_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    SELECT *
+    FROM user_session
+    WHERE user_id = p_user_id
+    ORDER BY start_time DESC;
+END $$
+
+CREATE PROCEDURE sp_insert_session(
+    IN p_user_id INT,
+    IN p_start_time DATETIME,
+    IN p_end_time DATETIME,
+    IN p_note VARCHAR(256)
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User does not exist';
+    END IF;
+
+    INSERT INTO user_session (user_id, start_time, end_time, note)
+    VALUES (p_user_id, p_start_time, p_end_time, p_note);
+END $$
+
+CREATE PROCEDURE sp_update_session(
+    IN p_user_id INT,
+    IN p_session_id INT,
+    IN p_start_time DATETIME,
+    IN p_end_time DATETIME,
+    IN p_note VARCHAR(256)
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM user_session
+        WHERE session_id = p_session_id
+          AND user_id = p_user_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist for this user';
+    END IF;
+
+    UPDATE user_session
+    SET start_time = p_start_time,
+        end_time   = p_end_time,
+        note       = p_note
+    WHERE session_id = p_session_id
+      AND user_id = p_user_id;
+END $$
+
+CREATE PROCEDURE sp_delete_session(
+    IN p_user_id INT,
+    IN p_session_id INT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM user_session
+        WHERE session_id = p_session_id
+          AND user_id = p_user_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist for this user';
+    END IF;
+
+    DELETE FROM user_session
+    WHERE session_id = p_session_id
+      AND user_id = p_user_id;
+END $$
+
+CREATE PROCEDURE sp_insert_session_exercise(
+    IN p_session_id INT,
+    IN p_exercise_name VARCHAR(64)
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM exercise WHERE exercise_name = p_exercise_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Exercise does not exist';
+    END IF;
+
+    INSERT INTO session_exercise (session_id, exercise_name)
+    VALUES (p_session_id, p_exercise_name);
+END $$
+
+CREATE PROCEDURE sp_delete_session_exercise(
+    IN p_session_id INT,
+    IN p_exercise_name VARCHAR(64)
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM session_exercise
+        WHERE session_id = p_session_id
+          AND exercise_name = p_exercise_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session exercise record does not exist';
+    END IF;
+
+    DELETE FROM session_exercise
+    WHERE session_id = p_session_id
+      AND exercise_name = p_exercise_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_exercises()
+BEGIN
+    SELECT exercise_name, description
+    FROM exercise;
+END $$
+
+CREATE PROCEDURE sp_fetch_exercise_by_name(IN p_exercise_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM exercise WHERE exercise_name = p_exercise_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Exercise does not exist';
+    END IF;
+
+    SELECT * FROM exercise
+    WHERE exercise_name = p_exercise_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_equipments_by_exercise_name(IN p_exercise_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM exercise WHERE exercise_name = p_exercise_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Exercise does not exist';
+    END IF;
+
+    SELECT e.*
+    FROM exercise_equipment AS ee
+    JOIN equipment AS e ON ee.equipment_name = e.equipment_name
+    WHERE ee.exercise_name = p_exercise_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_exercise_by_equipment_name(IN p_equipment_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM equipment WHERE equipment_name = p_equipment_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Equipment does not exist';
+    END IF;
+
+    SELECT ex.*
+    FROM exercise_equipment AS ee
+    JOIN exercise AS ex ON ee.exercise_name = ex.exercise_name
+    WHERE ee.equipment_name = p_equipment_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_aerobics()
+BEGIN
+    SELECT ex.*
+    FROM aerobics AS a
+    JOIN exercise AS ex ON a.exercise_name = ex.exercise_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_aerobics_by_name(IN p_aerobics_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM aerobics WHERE exercise_name = p_aerobics_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aerobics exercise does not exist';
+    END IF;
+
+    SELECT ex.*
+    FROM aerobics AS a
+    JOIN exercise AS ex ON a.exercise_name = ex.exercise_name
+    WHERE a.exercise_name = p_aerobics_name;
+END $$
+
+CREATE PROCEDURE sp_insert_aerobics_metric(
+    IN p_session_id INT,
+    IN p_aerobics_name VARCHAR(64),
+    IN p_duration TIME,
+    IN p_distance DECIMAL(6,2)
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM user_session WHERE session_id = p_session_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM aerobics WHERE exercise_name = p_aerobics_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aerobics exercise does not exist';
+    END IF;
+
+    INSERT INTO aerobics_metric (session_id, exercise_name, duration, distance)
+    VALUES (p_session_id, p_aerobics_name, p_duration, p_distance);
+END $$
+
+CREATE PROCEDURE sp_fetch_metrics(
+    IN p_aerobics_name VARCHAR(64),
+    IN p_session_id INT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM user_session WHERE session_id = p_session_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM aerobics WHERE exercise_name = p_aerobics_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aerobics exercise does not exist';
+    END IF;
+
+    SELECT *
+    FROM aerobics_metric
+    WHERE session_id = p_session_id
+      AND exercise_name = p_aerobics_name;
+END $$
+
+CREATE PROCEDURE sp_update_aerobics_metric(
+    IN p_session_id INT,
+    IN p_aerobics_name VARCHAR(64),
+    IN p_duration TIME,
+    IN p_distance DECIMAL(6,2)
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM aerobics_metric
+        WHERE session_id = p_session_id
+          AND exercise_name = p_aerobics_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
+    END IF;
+
+    UPDATE aerobics_metric
+    SET duration = p_duration,
+        distance = p_distance
+    WHERE session_id = p_session_id
+      AND exercise_name = p_aerobics_name;
+END $$
+
+CREATE PROCEDURE sp_delete_aerobics_metric(
+    IN p_session_id INT,
+    IN p_aerobics_name VARCHAR(64)
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM aerobics_metric
+        WHERE session_id = p_session_id
+          AND exercise_name = p_aerobics_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
+    END IF;
+
+    DELETE FROM aerobics_metric
+    WHERE session_id = p_session_id
+      AND exercise_name = p_aerobics_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_liftings()
+BEGIN
+    SELECT ex.*
+    FROM lifting AS l
+    JOIN exercise AS ex ON l.exercise_name = ex.exercise_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_lifting_by_name(IN p_lifting_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM lifting WHERE exercise_name = p_lifting_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting exercise does not exist';
+    END IF;
+
+    SELECT ex.*
+    FROM lifting AS l
+    JOIN exercise AS ex ON l.exercise_name = ex.exercise_name
+    WHERE l.exercise_name = p_lifting_name;
+END $$
+
+CREATE PROCEDURE sp_insert_lifting_set(
+    IN p_session_id INT,
+    IN p_lifting_name VARCHAR(64),
+    IN p_set_num INT,
+    IN p_weight DECIMAL(5,2),
+    IN p_reps INT
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM lifting WHERE exercise_name = p_lifting_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting exercise does not exist';
+    END IF;
+
+    INSERT INTO lifting_set (session_id, exercise_name, set_num, weight, reps)
+    VALUES (p_session_id, p_lifting_name, p_set_num, p_weight, p_reps);
+END $$
+
+CREATE PROCEDURE sp_fetch_sets(
+    IN p_lifting_name VARCHAR(64),
+    IN p_session_id INT
+)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM lifting WHERE exercise_name = p_lifting_name) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting exercise does not exist';
+    END IF;
+
+    SELECT *
+    FROM lifting_set
+    WHERE session_id = p_session_id
+      AND exercise_name = p_lifting_name
+    ORDER BY set_num;
+END $$
+
+CREATE PROCEDURE sp_update_lifting_set(
+    IN p_session_id INT,
+    IN p_lifting_name VARCHAR(64),
+    IN p_set_num INT,
+    IN p_weight DECIMAL(5,2),
+    IN p_reps INT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM lifting_set
+        WHERE session_id = p_session_id
+          AND exercise_name = p_lifting_name
+          AND set_num = p_set_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting set record does not exist';
+    END IF;
+
+    UPDATE lifting_set
+    SET weight = p_weight,
+        reps = p_reps
+    WHERE session_id = p_session_id
+      AND exercise_name = p_lifting_name
+      AND set_num = p_set_num;
+END $$
+
+CREATE PROCEDURE sp_delete_lifting_set(
+    IN p_session_id INT,
+    IN p_lifting_name VARCHAR(64),
+    IN p_set_num INT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM lifting_set
+        WHERE session_id = p_session_id
+          AND exercise_name = p_lifting_name
+          AND set_num = p_set_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting set record does not exist';
+    END IF;
+
+    DELETE FROM lifting_set
+    WHERE session_id = p_session_id
+      AND exercise_name = p_lifting_name
+      AND set_num = p_set_num;
+END $$
+
+CREATE PROCEDURE sp_fetch_muscles_by_lifting_name(IN p_lifting_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM lifting WHERE exercise_name = p_lifting_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting exercise does not exist';
+    END IF;
+
+    SELECT m.*
+    FROM lifting_muscle AS lm
+    JOIN muscle AS m ON lm.muscle_name = m.muscle_name
+    WHERE lm.exercise_name = p_lifting_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_liftings_by_muscle_name(IN p_muscle_name VARCHAR(64))
+BEGIN
+    -- Muscle must exist
+    IF NOT EXISTS (
+        SELECT 1 FROM muscle WHERE muscle_name = p_muscle_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Muscle does not exist';
+    END IF;
+
+    SELECT ex.*
+    FROM lifting_muscle AS lm
+    JOIN lifting AS l ON lm.exercise_name = l.exercise_name
+    JOIN exercise AS ex ON l.exercise_name = ex.exercise_name
+    WHERE lm.muscle_name = p_muscle_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_muscle_group(IN p_muscle_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM muscle WHERE muscle_name = p_muscle_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Muscle does not exist';
+    END IF;
+
+    SELECT mg.*
+    FROM muscle AS m
+    JOIN muscle_group AS mg ON m.group_name = mg.group_name
+    WHERE m.muscle_name = p_muscle_name;
+END $$
+
+CREATE PROCEDURE sp_fetch_group_muscle(IN p_group_name VARCHAR(64))
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM muscle_group WHERE group_name = p_group_name
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Muscle group does not exist';
+    END IF;
+
+    SELECT *
+    FROM muscle
+    WHERE group_name = p_group_name;
+END $$
+
+DELIMITER ;
