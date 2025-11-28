@@ -823,3 +823,228 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+
+-- insert rows into the tables
+INSERT INTO exercise (exercise_name, description)
+VALUES
+('Bench Press', 'Barbell chest press targeting pectorals'),
+('Incline Bench Press', 'Incline barbell press for upper chest'),
+('Decline Bench Press', 'Decline barbell press for lower chest'),
+('Dumbbell Chest Press', 'Dumbbell-based chest pressing movement'),
+('Dumbbell Flyes', 'Chest isolation exercise using dumbbells'),
+('Push Ups', 'Bodyweight chest push movement'),
+
+('Lat Pulldown', 'Back exercise targeting lats'),
+('Seated Row', 'Cable row for mid-back development'),
+('Bent Over Barbell Row', 'Compound row movement for back'),
+('Dumbbell Row', 'Single-arm dumbbell back row'),
+('Pull Ups', 'Bodyweight vertical pulling exercise'),
+('Chin Ups', 'Underhand grip pulling movement'),
+
+('Barbell Squat', 'Compound leg movement targeting quads and glutes'),
+('Front Squat', 'Barbell squat variation emphasizing quads'),
+('Leg Press', 'Machine-based leg press'),
+('Romanian Deadlift', 'Deadlift variation for hamstrings'),
+('Hamstring Curl', 'Machine-based hamstring isolation'),
+('Leg Extension', 'Machine-based quad isolation'),
+('Calf Raise', 'Calf-targeting machine or free weight exercise'),
+('Goblet Squat', 'Kettlebell squat variation'),
+
+('Barbell Deadlift', 'Full-body compound movement targeting posterior chain'),
+('Sumo Deadlift', 'Wide-stance deadlift variation'),
+('Trap Bar Deadlift', 'Neutral grip deadlift variation'),
+
+('Barbell Shoulder Press', 'Barbell overhead press for shoulders'),
+('Dumbbell Shoulder Press', 'Dumbbell overhead shoulder press'),
+('Lateral Raise', 'Dumbbell raise for side delts'),
+('Front Raise', 'Dumbbell front shoulder isolation'),
+('Rear Delt Fly', 'Rear shoulder isolation movement'),
+
+('Barbell Bicep Curl', 'Free weight curl for biceps'),
+('Dumbbell Bicep Curl', 'Dumbbell curl for biceps'),
+('Hammer Curl', 'Neutral-grip dumbbell bicep curl'),
+('Tricep Rope Pushdown', 'Cable pressdown targeting triceps'),
+('Tricep Dips', 'Bodyweight dip movement for triceps'),
+('Overhead Tricep Extension', 'Dumbbell tricep isolation exercise'),
+
+('Cable Crunch', 'Weighted abdominal crunch exercise'),
+('Plank', 'Core stability bodyweight hold'),
+('Hanging Leg Raise', 'Advanced core exercise for lower abs'),
+('Russian Twists', 'Rotational ab exercise using weight'),
+
+-- Cardio / Aerobics section (goes into aerobics table too)
+('Treadmill Running', 'Indoor running exercise'),
+('Stationary Bike', 'Indoor cycling machine'),
+('Elliptical Trainer', 'Low-impact cardio machine'),
+('Rowing Machine', 'Full-body cardio rowing motion'),
+('Stair Climber', 'Cardio machine simulating stair climbing'),
+('Jump Rope', 'High intensity rope jumping cardio'),
+('Outdoor Running', 'Outdoor jogging or running'),
+('Swimming', 'Full-body aerobic swimming exercise'),
+('Cycling', 'Outdoor cycling exercise'),
+('Hiking', 'Outdoor uphill cardio exercise'),
+('Walking', 'Low impact aerobic activity'),
+('High Knees', 'Bodyweight cardio warm-up drill'),
+('Mountain Climbers', 'Core + cardio bodyweight drill'),
+('Burpees', 'High-intensity full-body aerobic drill'),
+('Jumping Jacks', 'Full-body cardio warm-up movement'),
+('Rowing Sprints', 'High-intensity interval rowing'),
+('Spinning Class', 'Indoor group cycling cardio session'),
+('Stair Sprint', 'High-intensity stair running interval');
+
+INSERT INTO muscle_group (group_name, type)
+VALUES
+('Chest','Upper Body'),
+('Back', 'Upper Body'),
+('Shoulders', 'Upper Body'),
+('Biceps', 'Upper Body'),
+('Triceps', 'Upper Body'),
+('Quadriceps', 'Lower Body'),
+('Hamstrings', 'Lower Body'),
+('Calves', 'Lower Body'),
+('Core', 'Core');
+
+INSERT INTO equipment (equipment_name, description)
+VALUES
+('Barbell', 'Standard Olympic barbell used for compound lifts'),
+('Dumbbells', 'Free weight dumbbells for various exercises'),
+('Bench', 'Flat bench for pressing exercises'),
+('Incline Bench', 'Incline bench for upper chest exercises'),
+('Decline Bench', 'Decline bench for lower chest exercises'),
+('Cable Machine', 'Adjustable cable pulley machine'),
+('Lat Pulldown Machine', 'Machine for vertical pulling exercises'),
+('Seated Row Machine', 'Cable row machine targeting the back'),
+('Smith Machine', 'Guided barbell machine for safer lifting'),
+('Leg Press Machine', 'Machine used to train quads and glutes'),
+('Leg Extension Machine', 'Isolation machine for quadriceps'),
+('Hamstring Curl Machine', 'Machine isolating the hamstrings'),
+('Calf Raise Machine', 'Machine targeting calf muscles'),
+('Squat Rack', 'Rack for squats and barbell lifts'),
+('Power Rack', 'Full cage structure for weightlifting'),
+('Kettlebell', 'Ball-shaped weight for swings and goblet squats'),
+('Pull Up Bar', 'Bar for pull-ups and chin-ups'),
+('Dip Bars', 'Parallel bars for tricep dips'),
+('Pec Deck Machine', 'Chest fly isolation machine'),
+('Chest Press Machine', 'Machine version of chest press exercise'),
+('Rowing Machine', 'Cardio machine simulating rowing motion'),
+('Treadmill', 'Cardio machine for walking or running'),
+('Stationary Bike', 'Indoor cycling machine'),
+('Elliptical Trainer', 'Low-impact cardio machine'),
+('Stair Climber', 'Cardio machine simulating stair climbing'),
+('Spin Bike', 'High-intensity indoor bike'),
+('Jump Rope', 'Rope used for cardio skipping exercises'),
+('Ab Crunch Machine', 'Machine for abdominal crunches'),
+('Medicine Ball', 'Weighted ball for core and strength exercises'),
+('Resistance Bands', 'Elastic bands used for resistance training'),
+('Trap Bar', 'Hex bar for trap bar deadlifts'),
+('Weight Plates', 'Plates added to bars for resistance'),
+('EZ Bar', 'Curved bar used for arm exercises'),
+('Rowing Ergometer', 'High-performance rowing machine');
+
+INSERT INTO lifting (exercise_name)
+SELECT exercise_name
+FROM exercise
+WHERE exercise_name NOT IN (
+  'Treadmill Running',
+  'Stationary Bike',
+  'Elliptical Trainer',
+  'Rowing Machine',
+  'Stair Climber',
+  'Jump Rope',
+  'Outdoor Running',
+  'Swimming',
+  'Cycling',
+  'Hiking',
+  'Walking',
+  'High Knees',
+  'Mountain Climbers',
+  'Burpees',
+  'Jumping Jacks',
+  'Rowing Sprints',
+  'Spinning Class',
+  'Stair Sprint'
+);
+
+INSERT INTO aerobics (exercise_name)
+SELECT exercise_name
+FROM exercise
+WHERE exercise_name IN (
+  'Treadmill Running',
+  'Stationary Bike',
+  'Elliptical Trainer',
+  'Rowing Machine',
+  'Stair Climber',
+  'Jump Rope',
+  'Outdoor Running',
+  'Swimming',
+  'Cycling',
+  'Hiking',
+  'Walking',
+  'High Knees',
+  'Mountain Climbers',
+  'Burpees',
+  'Jumping Jacks',
+  'Rowing Sprints',
+  'Spinning Class',
+  'Stair Sprint'
+);
+
+INSERT INTO muscle (muscle_name, group_name)
+VALUES
+ -- Chest
+  ('Pectoralis Major', 'Chest'),
+  ('Pectoralis Minor', 'Chest'),
+  ('Serratus Anterior', 'Chest'),
+
+  -- Back
+  ('Latissimus Dorsi', 'Back'),
+  ('Trapezius Upper', 'Back'),
+  ('Trapezius Middle', 'Back'),
+  ('Trapezius Lower', 'Back'),
+  ('Rhomboid Major', 'Back'),
+  ('Rhomboid Minor', 'Back'),
+  ('Teres Major', 'Back'),
+
+  -- Shoulders
+  ('Anterior Deltoid', 'Shoulders'),
+  ('Lateral Deltoid', 'Shoulders'),
+  ('Posterior Deltoid', 'Shoulders'),
+  ('Supraspinatus', 'Shoulders'),
+  ('Infraspinatus', 'Shoulders'),
+  ('Teres Minor', 'Shoulders'),
+  ('Subscapularis', 'Shoulders'),
+
+  -- Biceps
+  ('Biceps Brachii Long Head', 'Biceps'),
+  ('Biceps Brachii Short Head', 'Biceps'),
+  ('Brachialis', 'Biceps'),
+  ('Brachioradialis', 'Biceps'),
+
+  -- Triceps
+  ('Triceps Long Head', 'Triceps'),
+  ('Triceps Lateral Head', 'Triceps'),
+  ('Triceps Medial Head', 'Triceps'),
+
+  -- Quadriceps
+  ('Rectus Femoris', 'Quadriceps'),
+  ('Vastus Lateralis', 'Quadriceps'),
+  ('Vastus Medialis', 'Quadriceps'),
+  ('Vastus Intermedius', 'Quadriceps'),
+
+  -- Hamstrings
+  ('Biceps Femoris', 'Hamstrings'),
+  ('Semitendinosus', 'Hamstrings'),
+  ('Semimembranosus', 'Hamstrings'),
+
+  -- Calves
+  ('Gastrocnemius Medial Head', 'Calves'),
+  ('Gastrocnemius Lateral Head', 'Calves'),
+  ('Soleus', 'Calves'),
+
+  -- Core
+  ('Rectus Abdominis', 'Core'),
+  ('External Oblique', 'Core'),
+  ('Internal Oblique', 'Core'),
+  ('Transversus Abdominis', 'Core'),
+  ('Erector Spinae Lumbar', 'Core');
