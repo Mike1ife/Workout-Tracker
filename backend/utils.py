@@ -7,7 +7,7 @@ from shcema import *
 conn = pymysql.connect(
     host="localhost",
     user="root",
-    password="daiguangyi123",
+    password="password1",
     database="workout_tracker",
     cursorclass=pymysql.cursors.DictCursor,
 )
@@ -148,11 +148,9 @@ def fetch_health_conditions_by_user_id(userId: int) -> List[HealthCondition]:
     rows = _call_proc("sp_fetch_health_conditions_by_user_id", (userId,))
     return [
         HealthCondition(
-            **{
-                "createdAt": row["create_at"],
-                "weight": row["weight"],
-                "body_fat_percent": row["body_fat_percent"],
-            }
+            createdAt=str(row["create_at"]),
+            weight=row["weight"],
+            body_fat_percent=row["body_fat_percent"]
         )
         for row in rows
     ]
@@ -177,7 +175,11 @@ def delete_health_condition(userId: int, createdAt: str):
 def fetch_sessions_by_user_id(userId: int) -> List[Session]:
     rows = _call_proc("sp_fetch_sessions_by_user_id", (userId,))
     return [
-        Session(startTime=row["start_time"], endTime=row["end_time"], note=row["note"])
+        Session(
+            startTime=str(row["start_time"]),
+            endTime=str(row["end_time"]), 
+            note=row["note"]
+        )
         for row in rows
     ]
 
