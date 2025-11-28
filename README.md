@@ -67,10 +67,10 @@ Modify `create_database.sql`
 - type
 
 ## ERD
-<img width="1186" height="1074" alt="image" src="https://github.com/user-attachments/assets/116a8ecc-99ae-4ffe-bbd8-36b8efbb9b32" />
+<img width="1273" height="1113" alt="image" src="https://github.com/user-attachments/assets/98ec2c41-c8d7-47bf-a18a-c0c8a1674513" />
 
 ## UML
-<img width="1573" height="1258" alt="image" src="https://github.com/user-attachments/assets/47d19a94-3351-4b14-8391-e963d23f3fdb" />
+<img width="2209" height="2589" alt="image" src="https://github.com/user-attachments/assets/2a159df3-b0c0-46fe-a0e1-d2f643a20991" />
 
 # Tony
 Frontend (React)
