@@ -990,6 +990,139 @@ WHERE exercise_name IN (
   'Stair Sprint'
 );
 
+INSERT INTO exercise_equipment (exercise_name, equipment_name)
+VALUES
+  -- ==== Chest ====
+  ('Bench Press',           'Barbell'),
+  ('Bench Press',           'Bench'),
+  ('Bench Press',           'Squat Rack'),
+  ('Bench Press',           'Weight Plates'),
+
+  ('Incline Bench Press',   'Barbell'),
+  ('Incline Bench Press',   'Incline Bench'),
+  ('Incline Bench Press',   'Squat Rack'),
+  ('Incline Bench Press',   'Weight Plates'),
+
+  ('Decline Bench Press',   'Barbell'),
+  ('Decline Bench Press',   'Decline Bench'),
+  ('Decline Bench Press',   'Squat Rack'),
+  ('Decline Bench Press',   'Weight Plates'),
+
+  ('Dumbbell Chest Press',  'Dumbbells'),
+  ('Dumbbell Chest Press',  'Bench'),
+
+  ('Dumbbell Flyes',        'Dumbbells'),
+  ('Dumbbell Flyes',        'Bench'),
+  ('Dumbbell Flyes',        'Pec Deck Machine'),
+
+  ('Push Ups',              'Resistance Bands'),
+
+  -- ==== Back ====
+  ('Lat Pulldown',          'Lat Pulldown Machine'),
+  ('Lat Pulldown',          'Cable Machine'),
+
+  ('Seated Row',            'Seated Row Machine'),
+  ('Seated Row',            'Cable Machine'),
+
+  ('Bent Over Barbell Row', 'Barbell'),
+  ('Bent Over Barbell Row', 'Weight Plates'),
+
+  ('Dumbbell Row',          'Dumbbells'),
+  ('Dumbbell Row',          'Bench'),
+
+  ('Pull Ups',              'Pull Up Bar'),
+  ('Chin Ups',              'Pull Up Bar'),
+
+  -- ==== Legs ====
+  ('Barbell Squat',         'Barbell'),
+  ('Barbell Squat',         'Squat Rack'),
+  ('Barbell Squat',         'Power Rack'),
+  ('Barbell Squat',         'Weight Plates'),
+
+  ('Front Squat',           'Barbell'),
+  ('Front Squat',           'Squat Rack'),
+  ('Front Squat',           'Weight Plates'),
+
+  ('Leg Press',             'Leg Press Machine'),
+
+  ('Romanian Deadlift',     'Barbell'),
+  ('Romanian Deadlift',     'Weight Plates'),
+
+  ('Hamstring Curl',        'Hamstring Curl Machine'),
+
+  ('Leg Extension',         'Leg Extension Machine'),
+
+  ('Calf Raise',            'Calf Raise Machine'),
+  ('Calf Raise',            'Smith Machine'),
+
+  ('Goblet Squat',          'Kettlebell'),
+
+  -- ==== Deadlift family ====
+  ('Barbell Deadlift',      'Barbell'),
+  ('Barbell Deadlift',      'Weight Plates'),
+
+  ('Sumo Deadlift',         'Barbell'),
+  ('Sumo Deadlift',         'Weight Plates'),
+
+  ('Trap Bar Deadlift',     'Trap Bar'),
+  ('Trap Bar Deadlift',     'Weight Plates'),
+
+  -- ==== Shoulders ====
+  ('Barbell Shoulder Press','Barbell'),
+  ('Barbell Shoulder Press','Bench'),
+  ('Barbell Shoulder Press','Power Rack'),
+  ('Barbell Shoulder Press','Weight Plates'),
+
+  ('Dumbbell Shoulder Press','Dumbbells'),
+  ('Dumbbell Shoulder Press','Bench'),
+
+  ('Lateral Raise',         'Dumbbells'),
+  ('Lateral Raise',         'Resistance Bands'),
+
+  ('Front Raise',           'Dumbbells'),
+  ('Front Raise',           'Resistance Bands'),
+
+  ('Rear Delt Fly',         'Dumbbells'),
+  ('Rear Delt Fly',         'Pec Deck Machine'),
+
+  -- ==== Arms ====
+  ('Barbell Bicep Curl',    'EZ Bar'),
+  ('Barbell Bicep Curl',    'Weight Plates'),
+
+  ('Dumbbell Bicep Curl',   'Dumbbells'),
+
+  ('Hammer Curl',           'Dumbbells'),
+
+  ('Tricep Rope Pushdown',  'Cable Machine'),
+
+  ('Tricep Dips',           'Dip Bars'),
+
+  ('Overhead Tricep Extension','Dumbbells'),
+
+  -- ==== Core ====
+  ('Cable Crunch',          'Cable Machine'),
+  ('Cable Crunch',          'Ab Crunch Machine'),
+
+  ('Plank',                 'Medicine Ball'),
+
+  ('Hanging Leg Raise',     'Pull Up Bar'),
+
+  ('Russian Twists',        'Medicine Ball'),
+
+  -- ==== Cardio / Aerobics (machine based) ====
+  ('Treadmill Running',     'Treadmill'),
+  ('Stationary Bike',       'Stationary Bike'),
+  ('Stationary Bike',       'Spin Bike'),
+  ('Elliptical Trainer',    'Elliptical Trainer'),
+  ('Rowing Machine',        'Rowing Machine'),
+  ('Rowing Machine',        'Rowing Ergometer'),
+  ('Stair Climber',         'Stair Climber'),
+  ('Jump Rope',             'Jump Rope'),
+  ('Walking',               'Treadmill'),
+  ('Rowing Sprints',        'Rowing Ergometer'),
+  ('Spinning Class',        'Spin Bike'),
+  ('Stair Sprint',          'Stair Climber');
+
 INSERT INTO muscle (muscle_name, group_name)
 VALUES
  -- Chest
