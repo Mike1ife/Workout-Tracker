@@ -8,6 +8,7 @@ CREATE TABLE users (
    first_name VARCHAR(64) NOT NULL,
    last_name VARCHAR(64) NOT NULL,
    email VARCHAR(128) UNIQUE NOT NULL,
+   password VARCHAR(255) NOT NULL,
    age INT,
    gender ENUM('Male', 'Female', 'Other'),
    CONSTRAINT users_age_chk CHECK (age > 0 AND age < 100),
@@ -200,12 +201,13 @@ CREATE PROCEDURE sp_insert_user(
     IN p_first_name VARCHAR(64),
     IN p_last_name VARCHAR(64),
     IN p_email VARCHAR(128),
+    IN p_password VARCHAR(255),
     IN p_age INT,
     IN p_gender ENUM('Male', 'Female', 'Other')
 )
 BEGIN
-    INSERT INTO users (first_name, last_name, email, age, gender)
-    VALUES (p_first_name, p_last_name, p_email, p_age, p_gender);
+    INSERT INTO users (first_name, last_name, email, password, age, gender)
+    VALUES (p_first_name, p_last_name, p_email, p_password, p_age, p_gender);
 END $$
 
 CREATE PROCEDURE sp_update_user(
@@ -213,6 +215,7 @@ CREATE PROCEDURE sp_update_user(
     IN p_first_name VARCHAR(64),
     IN p_last_name VARCHAR(64),
     IN p_email VARCHAR(128),
+    IN p_password VARCHAR(255),
     IN p_age INT,
     IN p_gender ENUM('Male', 'Female', 'Other')
 )
@@ -226,6 +229,7 @@ BEGIN
     SET first_name = p_first_name,
         last_name = p_last_name,
         email = p_email,
+        password = p_password,
         age = p_age,
         gender = p_gender
     WHERE user_id = p_user_id;
@@ -535,7 +539,7 @@ END $$
 
 CREATE PROCEDURE sp_fetch_aerobics()
 BEGIN
-    SELECT ex.*
+    SELECT ex.exercise_name, ex.description
     FROM aerobics AS a
     JOIN exercise AS ex ON a.exercise_name = ex.exercise_name;
 END $$
@@ -549,7 +553,7 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics exercise does not exist';
     END IF;
 
-    SELECT ex.*
+    SELECT ex.exercise_name, ex.description
     FROM aerobics AS a
     JOIN exercise AS ex ON a.exercise_name = ex.exercise_name
     WHERE a.exercise_name = p_aerobics_name;
@@ -649,7 +653,7 @@ END $$
 
 CREATE PROCEDURE sp_fetch_liftings()
 BEGIN
-    SELECT ex.*
+    SELECT ex.exercise_name, ex.description
     FROM lifting AS l
     JOIN exercise AS ex ON l.exercise_name = ex.exercise_name;
 END $$
@@ -663,7 +667,7 @@ BEGIN
             SET MESSAGE_TEXT = 'Lifting exercise does not exist';
     END IF;
 
-    SELECT ex.*
+    SELECT ex.exercise_name, ex.description
     FROM lifting AS l
     JOIN exercise AS ex ON l.exercise_name = ex.exercise_name
     WHERE l.exercise_name = p_lifting_name;

@@ -29,6 +29,7 @@ export const userAPI = {
         first_name: userData.firstName,
         last_name: userData.lastName,
         email: userData.email,
+        password: userData.password,
         age: userData.age,
         gender: userData.gender
       })
@@ -94,6 +95,25 @@ export const sessionAPI = {
 
   deleteSession: async (userId, sessionId) => {
     const response = await fetch(`${BASE_URL}/sessions/${userId}/${sessionId}`, {
+      method: 'DELETE'
+    });
+    return handleResponse(response);
+  },
+
+  addExerciseToSession: async (sessionId, exerciseName) => {
+    const response = await fetch(`${BASE_URL}/sessions/exercises`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: sessionId,
+        exerciseName: exerciseName
+      })
+    });
+    return handleResponse(response);
+  },
+
+  removeExerciseFromSession: async (sessionId, exerciseName) => {
+    const response = await fetch(`${BASE_URL}/sessions/exercises/${sessionId}/${exerciseName}`, {
       method: 'DELETE'
     });
     return handleResponse(response);
