@@ -133,6 +133,7 @@ CREATE TABLE lifting_section(
   session_id INT NOT NULL,
   exercise_name VARCHAR(64) NOT NULL,
   CONSTRAINT lifting_section_pk PRIMARY KEY (lifting_section_id),
+  CONSTRAINT lifting_section_ak UNIQUE (session_id, exercise_name),
   CONSTRAINT lifting_section_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
    ON UPDATE CASCADE ON DELETE CASCADE,
   CONSTRAINT lifting_section_lifting_fk FOREIGN KEY (exercise_name) REFERENCES lifting(exercise_name)
@@ -148,7 +149,7 @@ CREATE TABLE lifting_set (
   CONSTRAINT lifting_set_num_chk CHECK (set_num >= 1),
   CONSTRAINT lifting_weight_chk CHECK (weight >= 0),
   CONSTRAINT lifting_reps_chk CHECK (reps > 0),
-  CONSTRAINT lifting_set_pk PRIMARY KEY (lifting_section_id,set_num),
+  CONSTRAINT lifting_set_pk PRIMARY KEY (lifting_section_id, set_num),
   CONSTRAINT lifting_set_section_fk FOREIGN KEY (lifting_section_id) REFERENCES lifting_section(lifting_section_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -166,13 +167,23 @@ CREATE TABLE aerobics_section(
   aerobics_section_id INT AUTO_INCREMENT,
   session_id INT NOT NULL,
   exercise_name VARCHAR(64) NOT NULL,
+  CONSTRAINT aerobics_section_pk PRIMARY KEY (aerobics_section_id),
+  CONSTRAINT aerobics_section_ak UNIQUE (session_id, exercise_name),
+  CONSTRAINT aerobics_section_session_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT aerobics_section_aerobics_fk FOREIGN KEY (exercise_name) REFERENCES aerobics(exercise_name)
+    ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- Metric
+CREATE TABLE metric (
+  metric_id INT AUTO_INCREMENT,
+  aerobics_section_id INT NOT NULL,
   duration TIME NOT NULL,
   distance DEC(6,2) NOT NULL,
-  CONSTRAINT aerobics_distance_chk CHECK (distance > 0),
-  CONSTRAINT aerobics_metric_pk PRIMARY KEY (session_id, exercise_name),
-  CONSTRAINT aerobics_metric_session_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT aerobics_metric_aerobics_fk FOREIGN KEY (exercise_name) REFERENCES aerobics(exercise_name)
+  CONSTRAINT metric_distance_chk CHECK (distance > 0),
+  CONSTRAINT metric_pk PRIMARY KEY (metric_id),
+  CONSTRAINT metric_section_fk FOREIGN KEY (aerobics_section_id) REFERENCES aerobics_section(aerobics_section_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -272,7 +283,8 @@ BEGIN
     SELECT f.*, uf.create_at
     FROM user_food AS uf
     JOIN food AS f ON uf.food_name = f.food_name
-    WHERE uf.user_id = p_user_id;
+    WHERE uf.user_id = p_user_id
+    ORDER BY uf.create_at DESC;
 END $$
 
 CREATE PROCEDURE sp_insert_food(
@@ -461,6 +473,9 @@ CREATE PROCEDURE sp_insert_session_exercise(
     IN p_exercise_name VARCHAR(64)
 )
 BEGIN
+    DECLARE v_is_lifting INT;
+    DECLARE v_is_aerobics INT;
+
     IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Session does not exist';
@@ -471,8 +486,22 @@ BEGIN
             SET MESSAGE_TEXT = 'Exercise does not exist';
     END IF;
 
-    INSERT INTO session_exercise (session_id, exercise_name)
-    VALUES (p_session_id, p_exercise_name);
+    SELECT COUNT(*) INTO v_is_lifting
+    FROM lifting WHERE exercise_name = p_exercise_name;
+
+    SELECT COUNT(*) INTO v_is_aerobics
+    FROM aerobics WHERE exercise_name = p_exercise_name;
+
+    IF v_is_lifting > 0 THEN
+        INSERT INTO lifting_section (session_id, exercise_name)
+        VALUES (p_session_id, p_exercise_name);
+    ELSEIF v_is_aerobics > 0 THEN
+        INSERT INTO aerobics_section (session_id, exercise_name)
+        VALUES (p_session_id, p_exercise_name);
+    ELSE
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Exercise is neither lifting nor aerobics';
+    END IF;
 END $$
 
 CREATE PROCEDURE sp_delete_session_exercise(
@@ -480,26 +509,61 @@ CREATE PROCEDURE sp_delete_session_exercise(
     IN p_exercise_name VARCHAR(64)
 )
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM session_exercise
+    DECLARE v_is_lifting INT;
+    DECLARE v_is_aerobics INT;
+    DECLARE v_section_exists INT DEFAULT 0;
+
+    SELECT COUNT(*) INTO v_is_lifting
+    FROM lifting WHERE exercise_name = p_exercise_name;
+
+    SELECT COUNT(*) INTO v_is_aerobics
+    FROM aerobics WHERE exercise_name = p_exercise_name;
+
+    IF v_is_lifting > 0 THEN
+        SELECT COUNT(*) INTO v_section_exists
+        FROM lifting_section
         WHERE session_id = p_session_id
-          AND exercise_name = p_exercise_name
-    ) THEN
+          AND exercise_name = p_exercise_name;
+
+        IF v_section_exists = 0 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Lifting section does not exist';
+        END IF;
+
+        DELETE FROM lifting_section
+        WHERE session_id = p_session_id
+          AND exercise_name = p_exercise_name;
+
+    ELSEIF v_is_aerobics > 0 THEN
+        SELECT COUNT(*) INTO v_section_exists
+        FROM aerobics_section
+        WHERE session_id = p_session_id
+          AND exercise_name = p_exercise_name;
+
+        IF v_section_exists = 0 THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Aerobics section does not exist';
+        END IF;
+
+        DELETE FROM aerobics_section
+        WHERE session_id = p_session_id
+          AND exercise_name = p_exercise_name;
+    ELSE
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Session exercise record does not exist';
+            SET MESSAGE_TEXT = 'Exercise is neither lifting nor aerobics';
+    END IF;
+END $$
+
+CREATE PROCEDURE sp_fetch_exercises_by_session_id(IN p_session_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist';
     END IF;
 
-    DELETE FROM lifting_set
-    WHERE session_id = p_session_id
-      AND exercise_name = p_exercise_name;
-
-    DELETE FROM aerobics_metric
-    WHERE session_id = p_session_id
-      AND exercise_name = p_exercise_name;
-
-    DELETE FROM session_exercise
-    WHERE session_id = p_session_id
-      AND exercise_name = p_exercise_name;
+    SELECT exercise_name FROM lifting_section WHERE session_id = p_session_id
+    UNION
+    SELECT exercise_name FROM aerobics_section WHERE session_id = p_session_id;
 END $$
 
 CREATE PROCEDURE sp_fetch_exercises()
@@ -574,6 +638,8 @@ CREATE PROCEDURE sp_insert_aerobics_metric(
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
+    DECLARE v_section_id INT;
+
     IF NOT EXISTS (
         SELECT 1 FROM user_session WHERE session_id = p_session_id
     ) THEN
@@ -588,8 +654,19 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics exercise does not exist';
     END IF;
 
-    INSERT INTO aerobics_metric (session_id, exercise_name, duration, distance)
-    VALUES (p_session_id, p_aerobics_name, p_duration, p_distance);
+    SELECT aerobics_section_id INTO v_section_id
+    FROM aerobics_section
+    WHERE session_id = p_session_id
+      AND exercise_name = p_aerobics_name
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aerobics section does not exist for this session and exercise';
+    END IF;
+
+    INSERT INTO metric (aerobics_section_id, duration, distance)
+    VALUES (v_section_id, p_duration, p_distance);
 END $$
 
 CREATE PROCEDURE sp_fetch_metrics(
@@ -597,6 +674,8 @@ CREATE PROCEDURE sp_fetch_metrics(
     IN p_session_id INT
 )
 BEGIN
+    DECLARE v_section_id INT;
+
     IF NOT EXISTS (
         SELECT 1 FROM user_session WHERE session_id = p_session_id
     ) THEN
@@ -611,10 +690,19 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics exercise does not exist';
     END IF;
 
-    SELECT *
-    FROM aerobics_metric
+    SELECT aerobics_section_id INTO v_section_id
+    FROM aerobics_section
     WHERE session_id = p_session_id
-      AND exercise_name = p_aerobics_name;
+      AND exercise_name = p_aerobics_name
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
+        SELECT * FROM metric WHERE 1=0;
+    ELSE
+        SELECT duration, distance
+        FROM metric
+        WHERE aerobics_section_id = v_section_id;
+    END IF;
 END $$
 
 CREATE PROCEDURE sp_update_aerobics_metric(
@@ -624,20 +712,34 @@ CREATE PROCEDURE sp_update_aerobics_metric(
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM aerobics_metric
-        WHERE session_id = p_session_id
-          AND exercise_name = p_aerobics_name
-    ) THEN
+    DECLARE v_section_id INT;
+    DECLARE v_metric_id INT;
+
+    SELECT aerobics_section_id INTO v_section_id
+    FROM aerobics_section
+    WHERE session_id = p_session_id
+      AND exercise_name = p_aerobics_name
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Aerobics section does not exist';
+    END IF;
+
+    SELECT metric_id INTO v_metric_id
+    FROM metric
+    WHERE aerobics_section_id = v_section_id
+    LIMIT 1;
+
+    IF v_metric_id IS NULL THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
     END IF;
 
-    UPDATE aerobics_metric
+    UPDATE metric
     SET duration = p_duration,
         distance = p_distance
-    WHERE session_id = p_session_id
-      AND exercise_name = p_aerobics_name;
+    WHERE metric_id = v_metric_id;
 END $$
 
 CREATE PROCEDURE sp_delete_aerobics_metric(
@@ -645,18 +747,21 @@ CREATE PROCEDURE sp_delete_aerobics_metric(
     IN p_aerobics_name VARCHAR(64)
 )
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM aerobics_metric
-        WHERE session_id = p_session_id
-          AND exercise_name = p_aerobics_name
-    ) THEN
+    DECLARE v_section_id INT;
+
+    SELECT aerobics_section_id INTO v_section_id
+    FROM aerobics_section
+    WHERE session_id = p_session_id
+      AND exercise_name = p_aerobics_name
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
+            SET MESSAGE_TEXT = 'Aerobics section does not exist';
     END IF;
 
-    DELETE FROM aerobics_metric
-    WHERE session_id = p_session_id
-      AND exercise_name = p_aerobics_name;
+    DELETE FROM metric
+    WHERE aerobics_section_id = v_section_id;
 END $$
 
 CREATE PROCEDURE sp_fetch_liftings()
@@ -689,6 +794,8 @@ CREATE PROCEDURE sp_insert_lifting_set(
     IN p_reps INT
 )
 BEGIN
+    DECLARE v_section_id INT;
+
     IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Session does not exist';
@@ -699,8 +806,19 @@ BEGIN
             SET MESSAGE_TEXT = 'Lifting exercise does not exist';
     END IF;
 
-    INSERT INTO lifting_set (session_id, exercise_name, set_num, weight, reps)
-    VALUES (p_session_id, p_lifting_name, p_set_num, p_weight, p_reps);
+    SELECT lifting_section_id INTO v_section_id
+    FROM lifting_section
+    WHERE session_id = p_session_id
+      AND exercise_name = p_lifting_name
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting section does not exist for this session and exercise';
+    END IF;
+
+    INSERT INTO lifting_set (lifting_section_id, set_num, weight, reps)
+    VALUES (v_section_id, p_set_num, p_weight, p_reps);
 END $$
 
 CREATE PROCEDURE sp_fetch_sets(
@@ -708,6 +826,8 @@ CREATE PROCEDURE sp_fetch_sets(
     IN p_session_id INT
 )
 BEGIN
+    DECLARE v_section_id INT;
+
     IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Session does not exist';
@@ -718,11 +838,20 @@ BEGIN
             SET MESSAGE_TEXT = 'Lifting exercise does not exist';
     END IF;
 
-    SELECT *
-    FROM lifting_set
+    SELECT lifting_section_id INTO v_section_id
+    FROM lifting_section
     WHERE session_id = p_session_id
       AND exercise_name = p_lifting_name
-    ORDER BY set_num;
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
+        SELECT * FROM lifting_set WHERE 1=0;
+    ELSE
+        SELECT set_num, weight, reps
+        FROM lifting_set
+        WHERE lifting_section_id = v_section_id
+        ORDER BY set_num;
+    END IF;
 END $$
 
 CREATE PROCEDURE sp_update_lifting_set(
@@ -733,10 +862,22 @@ CREATE PROCEDURE sp_update_lifting_set(
     IN p_reps INT
 )
 BEGIN
+    DECLARE v_section_id INT;
+
+    SELECT lifting_section_id INTO v_section_id
+    FROM lifting_section
+    WHERE session_id = p_session_id
+      AND exercise_name = p_lifting_name
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting section does not exist';
+    END IF;
+
     IF NOT EXISTS (
         SELECT 1 FROM lifting_set
-        WHERE session_id = p_session_id
-          AND exercise_name = p_lifting_name
+        WHERE lifting_section_id = v_section_id
           AND set_num = p_set_num
     ) THEN
         SIGNAL SQLSTATE '45000'
@@ -746,8 +887,7 @@ BEGIN
     UPDATE lifting_set
     SET weight = p_weight,
         reps = p_reps
-    WHERE session_id = p_session_id
-      AND exercise_name = p_lifting_name
+    WHERE lifting_section_id = v_section_id
       AND set_num = p_set_num;
 END $$
 
@@ -757,10 +897,22 @@ CREATE PROCEDURE sp_delete_lifting_set(
     IN p_set_num INT
 )
 BEGIN
+    DECLARE v_section_id INT;
+
+    SELECT lifting_section_id INTO v_section_id
+    FROM lifting_section
+    WHERE session_id = p_session_id
+      AND exercise_name = p_lifting_name
+    LIMIT 1;
+
+    IF v_section_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Lifting section does not exist';
+    END IF;
+
     IF NOT EXISTS (
         SELECT 1 FROM lifting_set
-        WHERE session_id = p_session_id
-          AND exercise_name = p_lifting_name
+        WHERE lifting_section_id = v_section_id
           AND set_num = p_set_num
     ) THEN
         SIGNAL SQLSTATE '45000'
@@ -768,8 +920,7 @@ BEGIN
     END IF;
 
     DELETE FROM lifting_set
-    WHERE session_id = p_session_id
-      AND exercise_name = p_lifting_name
+    WHERE lifting_section_id = v_section_id
       AND set_num = p_set_num;
 END $$
 
@@ -790,7 +941,6 @@ END $$
 
 CREATE PROCEDURE sp_fetch_liftings_by_muscle_name(IN p_muscle_name VARCHAR(64))
 BEGIN
-    -- Muscle must exist
     IF NOT EXISTS (
         SELECT 1 FROM muscle WHERE muscle_name = p_muscle_name
     ) THEN
@@ -832,18 +982,6 @@ BEGIN
     SELECT *
     FROM muscle
     WHERE group_name = p_group_name;
-END $$
-
-CREATE PROCEDURE sp_fetch_exercises_by_session_id(IN p_session_id INT)
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Session does not exist';
-    END IF;
-
-    SELECT se.exercise_name
-    FROM session_exercise AS se
-    WHERE se.session_id = p_session_id;
 END $$
 
 DELIMITER ;
@@ -897,7 +1035,6 @@ VALUES
 ('Hanging Leg Raise', 'Advanced core exercise for lower abs'),
 ('Russian Twists', 'Rotational ab exercise using weight'),
 
--- Cardio / Aerobics section (goes into aerobics table too)
 ('Treadmill Running', 'Indoor running exercise'),
 ('Stationary Bike', 'Indoor cycling machine'),
 ('Elliptical Trainer', 'Low-impact cardio machine'),
@@ -1016,7 +1153,6 @@ WHERE exercise_name IN (
 
 INSERT INTO exercise_equipment (exercise_name, equipment_name)
 VALUES
-  -- ==== Chest ====
   ('Bench Press',           'Barbell'),
   ('Bench Press',           'Bench'),
   ('Bench Press',           'Squat Rack'),
@@ -1035,13 +1171,12 @@ VALUES
   ('Dumbbell Chest Press',  'Dumbbells'),
   ('Dumbbell Chest Press',  'Bench'),
 
-  ('Dumbbell Flies',        'Dumbbells'),
-  ('Dumbbell Flies',        'Bench'),
-  ('Dumbbell Flies',        'Pec Deck Machine'),
+  ('Dumbbell Flyes',        'Dumbbells'),
+  ('Dumbbell Flyes',        'Bench'),
+  ('Dumbbell Flyes',        'Pec Deck Machine'),
 
   ('Push Ups',              'Resistance Bands'),
 
-  -- ==== Back ====
   ('Lat Pulldown',          'Lat Pulldown Machine'),
   ('Lat Pulldown',          'Cable Machine'),
 
@@ -1057,7 +1192,6 @@ VALUES
   ('Pull Ups',              'Pull Up Bar'),
   ('Chin Ups',              'Pull Up Bar'),
 
-  -- ==== Legs ====
   ('Barbell Squat',         'Barbell'),
   ('Barbell Squat',         'Squat Rack'),
   ('Barbell Squat',         'Power Rack'),
@@ -1081,7 +1215,6 @@ VALUES
 
   ('Goblet Squat',          'Kettlebell'),
 
-  -- ==== Deadlift family ====
   ('Barbell Deadlift',      'Barbell'),
   ('Barbell Deadlift',      'Weight Plates'),
 
@@ -1091,7 +1224,6 @@ VALUES
   ('Trap Bar Deadlift',     'Trap Bar'),
   ('Trap Bar Deadlift',     'Weight Plates'),
 
-  -- ==== Shoulders ====
   ('Barbell Shoulder Press','Barbell'),
   ('Barbell Shoulder Press','Bench'),
   ('Barbell Shoulder Press','Power Rack'),
@@ -1109,7 +1241,6 @@ VALUES
   ('Rear Delt Fly',         'Dumbbells'),
   ('Rear Delt Fly',         'Pec Deck Machine'),
 
-  -- ==== Arms ====
   ('Barbell Bicep Curl',    'EZ Bar'),
   ('Barbell Bicep Curl',    'Weight Plates'),
 
@@ -1123,7 +1254,6 @@ VALUES
 
   ('Overhead Tricep Extension','Dumbbells'),
 
-  -- ==== Core ====
   ('Cable Crunch',          'Cable Machine'),
   ('Cable Crunch',          'Ab Crunch Machine'),
 
@@ -1133,7 +1263,6 @@ VALUES
 
   ('Russian Twists',        'Medicine Ball'),
 
-  -- ==== Cardio / Aerobics (machine based) ====
   ('Treadmill Running',     'Treadmill'),
   ('Stationary Bike',       'Stationary Bike'),
   ('Stationary Bike',       'Spin Bike'),
@@ -1149,12 +1278,10 @@ VALUES
 
 INSERT INTO muscle (muscle_name, group_name)
 VALUES
- -- Chest
   ('Pectoralis Major', 'Chest'),
   ('Pectoralis Minor', 'Chest'),
   ('Serratus Anterior', 'Chest'),
 
-  -- Back
   ('Latissimus Dorsi', 'Back'),
   ('Trapezius Upper', 'Back'),
   ('Trapezius Middle', 'Back'),
@@ -1163,7 +1290,6 @@ VALUES
   ('Rhomboid Minor', 'Back'),
   ('Teres Major', 'Back'),
 
-  -- Shoulders
   ('Anterior Deltoid', 'Shoulders'),
   ('Lateral Deltoid', 'Shoulders'),
   ('Posterior Deltoid', 'Shoulders'),
@@ -1172,34 +1298,28 @@ VALUES
   ('Teres Minor', 'Shoulders'),
   ('Subscapularis', 'Shoulders'),
 
-  -- Biceps
   ('Biceps Brachii Long Head', 'Biceps'),
   ('Biceps Brachii Short Head', 'Biceps'),
   ('Brachialis', 'Biceps'),
   ('Brachioradialis', 'Biceps'),
 
-  -- Triceps
   ('Triceps Long Head', 'Triceps'),
   ('Triceps Lateral Head', 'Triceps'),
   ('Triceps Medial Head', 'Triceps'),
 
-  -- Quadriceps
   ('Rectus Femoris', 'Quadriceps'),
   ('Vastus Lateralis', 'Quadriceps'),
   ('Vastus Medialis', 'Quadriceps'),
   ('Vastus Intermedius', 'Quadriceps'),
 
-  -- Hamstrings
   ('Biceps Femoris', 'Hamstrings'),
   ('Semitendinosus', 'Hamstrings'),
   ('Semimembranosus', 'Hamstrings'),
 
-  -- Calves
   ('Gastrocnemius Medial Head', 'Calves'),
   ('Gastrocnemius Lateral Head', 'Calves'),
   ('Soleus', 'Calves'),
 
-  -- Core
   ('Rectus Abdominis', 'Core'),
   ('External Oblique', 'Core'),
   ('Internal Oblique', 'Core'),
