@@ -284,6 +284,45 @@ export const liftingAPI = {
   }
 };
 
+export const aerobicAPI = {
+  getMetrics: async (aerobicName, sessionId) => {
+    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}`);
+    const data = await handleResponse(response);
+    return data.metrics;
+  },
+
+  addMetric: async (aerobicName, sessionId, metricData) => {
+    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        duration: metricData.duration,
+        distance: metricData.distance
+      })
+    });
+    return handleResponse(response);
+  },
+
+  updateMetric: async (aerobicName, sessionId, metricData) => {
+    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        duration: metricData.duration,
+        distance: metricData.distance
+      })
+    });
+    return handleResponse(response);
+  },
+
+  deleteMetric: async (aerobicName, sessionId) => {
+    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}`, {
+      method: 'DELETE'
+    });
+    return handleResponse(response);
+  }
+};
+
 export const dashboardAPI = {
   getDashboardStats: async (userId) => {
     try {
@@ -338,5 +377,6 @@ export default {
   exercise: exerciseAPI,
   food: foodAPI,
   lifting: liftingAPI,
+  aerobic: aerobicAPI,
   dashboard: dashboardAPI
 };

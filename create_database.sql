@@ -167,9 +167,9 @@ CREATE TABLE aerobics (
 CREATE TABLE aerobics_metric (
   session_id INT NOT NULL,
   exercise_name VARCHAR(64) NOT NULL,
-  duration TIME NOT NULL,
-  distance DEC(6,2) NOT NULL,
-  CONSTRAINT aerobics_distance_chk CHECK (distance > 0),
+  duration TIME,
+  distance DEC(6,2),
+  CONSTRAINT aerobics_distance_chk CHECK (distance IS NULL OR distance > 0),
   CONSTRAINT aerobics_metric_pk PRIMARY KEY (session_id, exercise_name),
   CONSTRAINT aerobics_metric_session_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
@@ -488,6 +488,14 @@ BEGIN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Session exercise record does not exist';
     END IF;
+
+    DELETE FROM lifting_set
+    WHERE session_id = p_session_id
+      AND exercise_name = p_exercise_name;
+
+    DELETE FROM aerobics_metric
+    WHERE session_id = p_session_id
+      AND exercise_name = p_exercise_name;
 
     DELETE FROM session_exercise
     WHERE session_id = p_session_id
@@ -1027,9 +1035,9 @@ VALUES
   ('Dumbbell Chest Press',  'Dumbbells'),
   ('Dumbbell Chest Press',  'Bench'),
 
-  ('Dumbbell Flyes',        'Dumbbells'),
-  ('Dumbbell Flyes',        'Bench'),
-  ('Dumbbell Flyes',        'Pec Deck Machine'),
+  ('Dumbbell Flies',        'Dumbbells'),
+  ('Dumbbell Flies',        'Bench'),
+  ('Dumbbell Flies',        'Pec Deck Machine'),
 
   ('Push Ups',              'Resistance Bands'),
 

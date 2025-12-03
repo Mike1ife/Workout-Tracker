@@ -215,6 +215,10 @@ const Dashboard = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [exerciseRefreshKey, setExerciseRefreshKey] = useState(0);
   const [setRefreshTrigger, setSetRefreshTrigger] = useState(0);
+  const [showEditSession, setShowEditSession] = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
+  const [showAddAerobicMetric, setShowAddAerobicMetric] = useState(false);
+  const [selectedAerobicExercise, setSelectedAerobicExercise] = useState(null);
   
   const isFetchingRef = useRef(false);
 
@@ -240,8 +244,15 @@ const Dashboard = () => {
     const savedUser = localStorage.getItem('workout_tracker_user');
     if (savedUser) {
       const user = JSON.parse(savedUser);
-      setCurrentUser(user);
-      setIsAuthenticated(true);
+      api.user.getUserById(user.user_id)
+        .then(() => {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        })
+        .catch(() => {
+          localStorage.removeItem('workout_tracker_user');
+          setIsAuthenticated(false);
+        });
     }
   }, []);
 
@@ -388,7 +399,34 @@ const Dashboard = () => {
           </div>
           <p className="session-note">{session.note || "No notes"}</p>
         </div>
-        <ChevronRight className="chevron-icon" />
+        <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingSession(session);
+              setShowEditSession(true);
+            }}
+            className="btn-secondary"
+            style={{padding: '0.5rem'}}
+            title="Edit session"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteSession(session.session_id);
+            }}
+            className="btn-delete"
+            title="Delete session"
+          >
+            <Trash2 size={16} />
+          </button>
+          <ChevronRight className="chevron-icon" />
+        </div>
       </div>
     </div>
   );
@@ -396,6 +434,135 @@ const Dashboard = () => {
   const handleSessionClick = (session) => {
     setSelectedSession(session);
     setActiveTab('session-detail');
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+    if (!window.confirm('Are you sure you want to delete this session? This will also delete all exercises and sets associated with it.')) {
+      return;
+    }
+
+    try {
+      await api.session.deleteSession(currentUser.user_id, sessionId);
+      fetchAllData();
+      if (selectedSession?.session_id === sessionId) {
+        setSelectedSession(null);
+        setActiveTab('sessions');
+      }
+    } catch (err) {
+      alert('Error deleting session: ' + err.message);
+    }
+  };
+
+  const EditSessionForm = () => {
+    const [formData, setFormData] = useState({
+      start_date: editingSession.startTime.split('T')[0] || editingSession.startTime.split(' ')[0],
+      start_time: editingSession.startTime.split('T')[1]?.substring(0, 5) || editingSession.startTime.split(' ')[1]?.substring(0, 5),
+      end_date: editingSession.endTime.split('T')[0] || editingSession.endTime.split(' ')[0],
+      end_time: editingSession.endTime.split('T')[1]?.substring(0, 5) || editingSession.endTime.split(' ')[1]?.substring(0, 5),
+      note: editingSession.note || ''
+    });
+
+    const handleSubmit = async () => {
+      try {
+        const startDateTime = `${formData.start_date} ${formData.start_time}:00`;
+        const endDateTime = `${formData.end_date} ${formData.end_time}:00`;
+
+        await api.session.updateSession(currentUser.user_id, editingSession.session_id, {
+          start_time: startDateTime,
+          end_time: endDateTime,
+          note: formData.note
+        });
+
+        setShowEditSession(false);
+        setEditingSession(null);
+        fetchAllData();
+        if (selectedSession?.session_id === editingSession.session_id) {
+          setSelectedSession({
+            ...selectedSession,
+            startTime: startDateTime,
+            endTime: endDateTime,
+            note: formData.note
+          });
+        }
+      } catch (err) {
+        alert('Error updating session: ' + err.message);
+      }
+    };
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3 className="modal-title">Edit Workout Session</h3>
+          
+          <div className="form-container">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Start Date</label>
+                <input 
+                  type="date" 
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                  className="form-input" 
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Start Time</label>
+                <input 
+                  type="time" 
+                  value={formData.start_time}
+                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                  className="form-input" 
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">End Date</label>
+                <input 
+                  type="date" 
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                  className="form-input" 
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">End Time</label>
+                <input 
+                  type="time" 
+                  value={formData.end_time}
+                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                  className="form-input" 
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Notes</label>
+              <textarea 
+                value={formData.note}
+                onChange={(e) => setFormData({...formData, note: e.target.value})}
+                className="form-textarea" 
+                rows="3"
+                placeholder="How did the workout feel?"
+              />
+            </div>
+          </div>
+          
+          <div className="modal-buttons">
+            <button onClick={() => {
+              setShowEditSession(false);
+              setEditingSession(null);
+            }} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleSubmit} className="btn-primary">
+              Update Session
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const NewSessionForm = () => {
@@ -570,6 +737,21 @@ const Dashboard = () => {
       reps: ''
     });
 
+    useEffect(() => {
+      const fetchNextSetNum = async () => {
+        if (selectedExercise) {
+          try {
+            const sets = await api.lifting.getSets(selectedExercise.exerciseName, selectedSession.session_id);
+            const maxSetNum = sets.length > 0 ? Math.max(...sets.map(s => s.setNum)) : 0;
+            setFormData(prev => ({...prev, setNum: maxSetNum + 1}));
+          } catch (err) {
+            console.error('Error fetching sets:', err);
+          }
+        }
+      };
+      fetchNextSetNum();
+    }, [selectedExercise]);
+
     const handleSubmit = async () => {
       if (!formData.weight || !formData.reps) {
         alert('Please fill in all fields');
@@ -651,6 +833,7 @@ const Dashboard = () => {
 
   const SessionDetailView = () => {
     const [exerciseSets, setExerciseSets] = useState({});
+    const [aerobicMetrics, setAerobicMetrics] = useState({});
     const [expandedExercises, setExpandedExercises] = useState({});
     const [localExercises, setLocalExercises] = useState([]);
     const isFetchingLocalRef = useRef(false);
@@ -693,10 +876,11 @@ const Dashboard = () => {
         [exerciseName]: !prev[exerciseName]
       }));
 
-      if (!isCurrentlyExpanded && !exerciseSets[exerciseName]) {
+      if (!isCurrentlyExpanded) {
         const isLiftingExercise = liftingExercises.some(e => e.exerciseName === exerciseName);
+        const isAerobicExercise = aerobicExercises.some(e => e.exerciseName === exerciseName);
         
-        if (isLiftingExercise) {
+        if (isLiftingExercise && !exerciseSets[exerciseName]) {
           try {
             const sets = await api.lifting.getSets(exerciseName, selectedSession.session_id);
             setExerciseSets(prev => ({
@@ -708,6 +892,20 @@ const Dashboard = () => {
             setExerciseSets(prev => ({
               ...prev,
               [exerciseName]: []
+            }));
+          }
+        } else if (isAerobicExercise && !aerobicMetrics[exerciseName]) {
+          try {
+            const metrics = await api.aerobic.getMetrics(exerciseName, selectedSession.session_id);
+            setAerobicMetrics(prev => ({
+              ...prev,
+              [exerciseName]: metrics.length > 0 ? metrics[0] : null
+            }));
+          } catch (err) {
+            console.error('Error fetching aerobic metrics:', err);
+            setAerobicMetrics(prev => ({
+              ...prev,
+              [exerciseName]: null
             }));
           }
         }
@@ -736,6 +934,52 @@ const Dashboard = () => {
         await refreshSets(exerciseName);
       } catch (err) {
         alert('Error deleting set: ' + err.message);
+      }
+    };
+
+    const handleRemoveExercise = async (exerciseName) => {
+      if (!window.confirm(`Remove ${exerciseName} from this session? This will also delete all associated sets/metrics.`)) {
+        return;
+      }
+
+      try {
+        const isLiftingExercise = liftingExercises.some(e => e.exerciseName === exerciseName);
+        const isAerobicExercise = aerobicExercises.some(e => e.exerciseName === exerciseName);
+        
+        if (isLiftingExercise) {
+          const sets = await api.lifting.getSets(exerciseName, selectedSession.session_id);
+          for (const set of sets) {
+            await api.lifting.deleteSet(exerciseName, selectedSession.session_id, set.setNum);
+          }
+        } else if (isAerobicExercise) {
+          try {
+            await api.aerobic.deleteMetric(exerciseName, selectedSession.session_id);
+          } catch (err) {
+            console.log('No metrics to delete or error deleting metrics:', err);
+          }
+        }
+        
+        await api.session.removeExerciseFromSession(selectedSession.session_id, exerciseName);
+        
+        setLocalExercises(prev => prev.filter(ex => ex.exerciseName !== exerciseName));
+        
+        setExerciseSets(prev => {
+          const updated = {...prev};
+          delete updated[exerciseName];
+          return updated;
+        });
+        setAerobicMetrics(prev => {
+          const updated = {...prev};
+          delete updated[exerciseName];
+          return updated;
+        });
+        setExpandedExercises(prev => {
+          const updated = {...prev};
+          delete updated[exerciseName];
+          return updated;
+        });
+      } catch (err) {
+        alert('Error removing exercise: ' + err.message);
       }
     };
 
@@ -797,6 +1041,30 @@ const Dashboard = () => {
                         <span>{exercise.exerciseName}</span>
                       </div>
                       <div className="exercise-detail-actions">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveExercise(exercise.exerciseName);
+                          }}
+                          className="btn-delete"
+                          title="Remove from session"
+                          style={{marginRight: '0.5rem'}}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        {isAerobic && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAerobicExercise(exercise);
+                              setShowAddAerobicMetric(true);
+                            }}
+                            className="btn-small"
+                          >
+                            <Plus size={16} />
+                            Add Metrics
+                          </button>
+                        )}
                         {!isAerobic && (
                           <button 
                             onClick={(e) => {
@@ -822,11 +1090,16 @@ const Dashboard = () => {
                           <div className="aerobics-metrics">
                             <div className="metric-item">
                               <span className="metric-label">Duration</span>
-                              <span className="metric-value">--:--</span>
+                              <span className="metric-value">
+                                {aerobicMetrics[exercise.exerciseName]?.duration || '--:--'}
+                              </span>
                             </div>
                             <div className="metric-item">
                               <span className="metric-label">Distance</span>
-                              <span className="metric-value">-- mi</span>
+                              <span className="metric-value">
+                                {aerobicMetrics[exercise.exerciseName]?.distance ? 
+                                  `${aerobicMetrics[exercise.exerciseName].distance} mi` : '-- mi'}
+                              </span>
                             </div>
                           </div>
                         ) : (
@@ -1155,6 +1428,78 @@ const Dashboard = () => {
     );
   };
 
+  const AddAerobicMetricForm = () => {
+    const [formData, setFormData] = useState({
+      duration: '',
+      distance: ''
+    });
+
+    const handleSubmit = async () => {
+      if (!formData.duration || !formData.distance) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      try {
+        await api.aerobic.addMetric(
+          selectedAerobicExercise.exerciseName,
+          selectedSession.session_id,
+          {
+            duration: formData.duration,
+            distance: parseFloat(formData.distance)
+          }
+        );
+        setShowAddAerobicMetric(false);
+        setExerciseRefreshKey(prev => prev + 1);
+        alert('Metrics added successfully!');
+      } catch (err) {
+        alert('Error adding metrics: ' + err.message);
+      }
+    };
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3 className="modal-title">Add Metrics - {selectedAerobicExercise?.exerciseName}</h3>
+          
+          <div className="form-container">
+            <div className="form-group">
+              <label className="form-label">Duration (HH:MM:SS)</label>
+              <input 
+                type="text" 
+                value={formData.duration}
+                onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                className="form-input"
+                placeholder="00:30:00"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Distance (miles)</label>
+              <input 
+                type="number" 
+                step="0.1"
+                value={formData.distance}
+                onChange={(e) => setFormData({...formData, distance: e.target.value})}
+                className="form-input"
+                placeholder="3.5"
+              />
+            </div>
+          </div>
+          
+          <div className="modal-buttons">
+            <button onClick={() => setShowAddAerobicMetric(false)} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleSubmit} className="btn-primary">
+              Add Metrics
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="app">
       <div className="header">
@@ -1451,11 +1796,13 @@ const Dashboard = () => {
       </div>
 
       {showNewSession && <NewSessionForm />}
+      {showEditSession && editingSession && <EditSessionForm />}
       {showNewHealth && <NewHealthRecordForm />}
       {showNewFood && <NewFoodForm />}
       {showLogFood && <LogFoodForm />}
       {showAddExercise && <AddExerciseToSessionForm />}
       {showAddSet && <AddSetForm />}
+      {showAddAerobicMetric && <AddAerobicMetricForm />}
     </div>
   );
 };

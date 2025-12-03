@@ -269,9 +269,15 @@ def insert_aerobics_metric(sessionId: int, aerobicsName: str, metric: Metric):
         (sessionId, aerobicsName, metric.duration, metric.distance),
     )
 
-def fetch_metrics(aerobicsName: str, sessionId: int) -> List[Metric]:
+def fetch_metrics(aerobicsName: str, sessionId: int) -> List[dict]:
     rows = _call_proc("sp_fetch_metrics", (aerobicsName, sessionId))
-    return [Metric(**row) for row in rows]
+    return [
+        {
+            "duration": str(row["duration"]) if row.get("duration") else None,
+            "distance": float(row["distance"]) if row.get("distance") else None
+        }
+        for row in rows
+    ]
 
 
 def update_aerobics_metric(sessionId: int, aerobicsName: str, metric: Metric):

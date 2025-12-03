@@ -114,7 +114,7 @@ async def add_session_exercise(session_exercise: SessionExercise):
 
 
 @app.delete("/sessions/exercises/{sessionId}/{exerciseName}", tags=["Session Exercise"])
-async def delete_session_exercise(sessionId: int, exerciseName: str):
+async def delete_session_exercise_endpoint(sessionId: int, exerciseName: str):
     delete_session_exercise(sessionId=sessionId, exerciseName=exerciseName)
     return {"message": "Delete session exercise successfully"}
 
@@ -140,23 +140,6 @@ async def update_user_session(userId: int, sessionId: int, session: Session):
 async def delete_user_session(userId: int, sessionId: int):
     delete_session(userId=userId, sessionId=sessionId)
     return {"message": "Delete user's session successfully"}
-
-
-@app.post("/sessions/exercises", tags=["Session Exercise"])
-async def add_session_exercise(session_exercise: SessionExercise):
-    insert_session_exercise(sessionExercise=session_exercise)
-    return {"message": "Add exercise to session successfully"}
-
-
-@app.delete("/sessions/exercises/{sessionId}/{exerciseName}", tags=["Session Exercise"])
-async def delete_session_exercise(sessionId: int, exerciseName: str):
-    delete_session_exercise(sessionId=sessionId, exerciseName=exerciseName)
-    return {"message": "Delete session exercise successfully"}
-
-
-@app.get("/sessions/{sessionId}/exercises", tags=["Session Exercise"])
-async def get_session_exercises(sessionId: int):
-    return {"exercises": fetch_exercises_by_session_id(sessionId=sessionId)}
 
 
 @app.get("/exercises", tags=["Exercise"])
@@ -216,7 +199,7 @@ async def update_aerobics_metric(aerobicsName: str, sessionId: int, metric: Metr
 
 
 @app.delete("/exercises/aerobics/{aerobicsName}/metrics/{sessionId}", tags=["Aerobics"])
-async def delete_aerobics_metric(aerobicsName: str, sessionId: int):
+async def delete_aerobics_metric_endpoint(aerobicsName: str, sessionId: int):
     delete_aerobics_metric(sessionId=sessionId, aerobicsName=aerobicsName)
     return {"message": "Delete metric successfully"}
 
