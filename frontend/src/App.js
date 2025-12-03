@@ -1435,8 +1435,8 @@ const Dashboard = () => {
     });
 
     const handleSubmit = async () => {
-      if (!formData.duration || !formData.distance) {
-        alert('Please fill in all fields');
+      if (!formData.duration && !formData.distance) {
+        alert('Please fill in at least one field (duration or distance)');
         return;
       }
 
@@ -1445,8 +1445,8 @@ const Dashboard = () => {
           selectedAerobicExercise.exerciseName,
           selectedSession.session_id,
           {
-            duration: formData.duration,
-            distance: parseFloat(formData.distance)
+            duration: formData.duration || null,
+            distance: formData.distance ? parseFloat(formData.distance) : null
           }
         );
         setShowAddAerobicMetric(false);
@@ -1464,7 +1464,7 @@ const Dashboard = () => {
           
           <div className="form-container">
             <div className="form-group">
-              <label className="form-label">Duration (HH:MM:SS)</label>
+              <label className="form-label">Duration (HH:MM:SS)l</label>
               <input 
                 type="text" 
                 value={formData.duration}

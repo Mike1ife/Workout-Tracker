@@ -175,13 +175,13 @@ CREATE TABLE aerobics_section(
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- Metric
+-- Metric (with optional fields for aerobics)
 CREATE TABLE metric (
   metric_id INT AUTO_INCREMENT,
   aerobics_section_id INT NOT NULL,
-  duration TIME NOT NULL,
-  distance DEC(6,2) NOT NULL,
-  CONSTRAINT metric_distance_chk CHECK (distance > 0),
+  duration TIME,
+  distance DEC(6,2),
+  CONSTRAINT metric_distance_chk CHECK (distance IS NULL OR distance > 0),
   CONSTRAINT metric_pk PRIMARY KEY (metric_id),
   CONSTRAINT metric_section_fk FOREIGN KEY (aerobics_section_id) REFERENCES aerobics_section(aerobics_section_id)
     ON UPDATE CASCADE ON DELETE CASCADE
@@ -986,8 +986,26 @@ END $$
 
 DELIMITER ;
 
+-- Foods
+INSERT INTO food (food_name, carbohydrate, protein, fat)
+VALUES
+('Chicken Breast', 0, 31, 3.6),
+('Brown Rice', 45, 5, 1.8),
+('Broccoli', 7, 2.8, 0.4),
+('Salmon', 0, 25, 13),
+('Sweet Potato', 20, 2, 0.1),
+('Eggs', 1.1, 13, 11),
+('Oatmeal', 27, 5, 3),
+('Banana', 27, 1.3, 0.4),
+('Almonds', 6, 21, 49),
+('Greek Yogurt', 6, 17, 5),
+('Avocado', 9, 2, 15),
+('Spinach', 3.6, 2.9, 0.4),
+('Quinoa', 21, 4.4, 1.9),
+('Tuna', 0, 30, 1),
+('Whole Wheat Bread', 12, 4, 1.5);
 
--- insert rows into the tables
+-- Exercises
 INSERT INTO exercise (exercise_name, description)
 VALUES
 ('Bench Press', 'Barbell chest press targeting pectorals'),
@@ -1054,6 +1072,7 @@ VALUES
 ('Spinning Class', 'Indoor group cycling cardio session'),
 ('Stair Sprint', 'High-intensity stair running interval');
 
+-- Muscle Groups
 INSERT INTO muscle_group (group_name, type)
 VALUES
 ('Chest','Upper Body'),
@@ -1066,6 +1085,7 @@ VALUES
 ('Calves', 'Lower Body'),
 ('Core', 'Core');
 
+-- Equipment
 INSERT INTO equipment (equipment_name, description)
 VALUES
 ('Barbell', 'Standard Olympic barbell used for compound lifts'),
@@ -1103,6 +1123,7 @@ VALUES
 ('EZ Bar', 'Curved bar used for arm exercises'),
 ('Rowing Ergometer', 'High-performance rowing machine');
 
+-- Populate Lifting and Aerobics tables
 INSERT INTO lifting (exercise_name)
 SELECT exercise_name
 FROM exercise
@@ -1151,137 +1172,101 @@ WHERE exercise_name IN (
   'Stair Sprint'
 );
 
+-- Exercise Equipment relationships
 INSERT INTO exercise_equipment (exercise_name, equipment_name)
 VALUES
-  ('Bench Press',           'Barbell'),
-  ('Bench Press',           'Bench'),
-  ('Bench Press',           'Squat Rack'),
-  ('Bench Press',           'Weight Plates'),
-
-  ('Incline Bench Press',   'Barbell'),
-  ('Incline Bench Press',   'Incline Bench'),
-  ('Incline Bench Press',   'Squat Rack'),
-  ('Incline Bench Press',   'Weight Plates'),
-
-  ('Decline Bench Press',   'Barbell'),
-  ('Decline Bench Press',   'Decline Bench'),
-  ('Decline Bench Press',   'Squat Rack'),
-  ('Decline Bench Press',   'Weight Plates'),
-
-  ('Dumbbell Chest Press',  'Dumbbells'),
-  ('Dumbbell Chest Press',  'Bench'),
-
-  ('Dumbbell Flyes',        'Dumbbells'),
-  ('Dumbbell Flyes',        'Bench'),
-  ('Dumbbell Flyes',        'Pec Deck Machine'),
-
-  ('Push Ups',              'Resistance Bands'),
-
-  ('Lat Pulldown',          'Lat Pulldown Machine'),
-  ('Lat Pulldown',          'Cable Machine'),
-
-  ('Seated Row',            'Seated Row Machine'),
-  ('Seated Row',            'Cable Machine'),
-
+  ('Bench Press', 'Barbell'),
+  ('Bench Press', 'Bench'),
+  ('Bench Press', 'Squat Rack'),
+  ('Bench Press', 'Weight Plates'),
+  ('Incline Bench Press', 'Barbell'),
+  ('Incline Bench Press', 'Incline Bench'),
+  ('Incline Bench Press', 'Squat Rack'),
+  ('Incline Bench Press', 'Weight Plates'),
+  ('Decline Bench Press', 'Barbell'),
+  ('Decline Bench Press', 'Decline Bench'),
+  ('Decline Bench Press', 'Squat Rack'),
+  ('Decline Bench Press', 'Weight Plates'),
+  ('Dumbbell Chest Press', 'Dumbbells'),
+  ('Dumbbell Chest Press', 'Bench'),
+  ('Dumbbell Flyes', 'Dumbbells'),
+  ('Dumbbell Flyes', 'Bench'),
+  ('Dumbbell Flyes', 'Pec Deck Machine'),
+  ('Push Ups', 'Resistance Bands'),
+  ('Lat Pulldown', 'Lat Pulldown Machine'),
+  ('Lat Pulldown', 'Cable Machine'),
+  ('Seated Row', 'Seated Row Machine'),
+  ('Seated Row', 'Cable Machine'),
   ('Bent Over Barbell Row', 'Barbell'),
   ('Bent Over Barbell Row', 'Weight Plates'),
+  ('Dumbbell Row', 'Dumbbells'),
+  ('Dumbbell Row', 'Bench'),
+  ('Pull Ups', 'Pull Up Bar'),
+  ('Chin Ups', 'Pull Up Bar'),
+  ('Barbell Squat', 'Barbell'),
+  ('Barbell Squat', 'Squat Rack'),
+  ('Barbell Squat', 'Power Rack'),
+  ('Barbell Squat', 'Weight Plates'),
+  ('Front Squat', 'Barbell'),
+  ('Front Squat', 'Squat Rack'),
+  ('Front Squat', 'Weight Plates'),
+  ('Leg Press', 'Leg Press Machine'),
+  ('Romanian Deadlift', 'Barbell'),
+  ('Romanian Deadlift', 'Weight Plates'),
+  ('Hamstring Curl', 'Hamstring Curl Machine'),
+  ('Leg Extension', 'Leg Extension Machine'),
+  ('Calf Raise', 'Calf Raise Machine'),
+  ('Calf Raise', 'Smith Machine'),
+  ('Goblet Squat', 'Kettlebell'),
+  ('Barbell Deadlift', 'Barbell'),
+  ('Barbell Deadlift', 'Weight Plates'),
+  ('Sumo Deadlift', 'Barbell'),
+  ('Sumo Deadlift', 'Weight Plates'),
+  ('Trap Bar Deadlift', 'Trap Bar'),
+  ('Trap Bar Deadlift', 'Weight Plates'),
+  ('Barbell Shoulder Press', 'Barbell'),
+  ('Barbell Shoulder Press', 'Bench'),
+  ('Barbell Shoulder Press', 'Power Rack'),
+  ('Barbell Shoulder Press', 'Weight Plates'),
+  ('Dumbbell Shoulder Press', 'Dumbbells'),
+  ('Dumbbell Shoulder Press', 'Bench'),
+  ('Lateral Raise', 'Dumbbells'),
+  ('Lateral Raise', 'Resistance Bands'),
+  ('Front Raise', 'Dumbbells'),
+  ('Front Raise', 'Resistance Bands'),
+  ('Rear Delt Fly', 'Dumbbells'),
+  ('Rear Delt Fly', 'Pec Deck Machine'),
+  ('Barbell Bicep Curl', 'EZ Bar'),
+  ('Barbell Bicep Curl', 'Weight Plates'),
+  ('Dumbbell Bicep Curl', 'Dumbbells'),
+  ('Hammer Curl', 'Dumbbells'),
+  ('Tricep Rope Pushdown', 'Cable Machine'),
+  ('Tricep Dips', 'Dip Bars'),
+  ('Overhead Tricep Extension', 'Dumbbells'),
+  ('Cable Crunch', 'Cable Machine'),
+  ('Cable Crunch', 'Ab Crunch Machine'),
+  ('Plank', 'Medicine Ball'),
+  ('Hanging Leg Raise', 'Pull Up Bar'),
+  ('Russian Twists', 'Medicine Ball'),
+  ('Treadmill Running', 'Treadmill'),
+  ('Stationary Bike', 'Stationary Bike'),
+  ('Stationary Bike', 'Spin Bike'),
+  ('Elliptical Trainer', 'Elliptical Trainer'),
+  ('Rowing Machine', 'Rowing Machine'),
+  ('Rowing Machine', 'Rowing Ergometer'),
+  ('Stair Climber', 'Stair Climber'),
+  ('Jump Rope', 'Jump Rope'),
+  ('Walking', 'Treadmill'),
+  ('Rowing Sprints', 'Rowing Ergometer'),
+  ('Spinning Class', 'Spin Bike'),
+  ('Stair Sprint', 'Stair Climber');
 
-  ('Dumbbell Row',          'Dumbbells'),
-  ('Dumbbell Row',          'Bench'),
-
-  ('Pull Ups',              'Pull Up Bar'),
-  ('Chin Ups',              'Pull Up Bar'),
-
-  ('Barbell Squat',         'Barbell'),
-  ('Barbell Squat',         'Squat Rack'),
-  ('Barbell Squat',         'Power Rack'),
-  ('Barbell Squat',         'Weight Plates'),
-
-  ('Front Squat',           'Barbell'),
-  ('Front Squat',           'Squat Rack'),
-  ('Front Squat',           'Weight Plates'),
-
-  ('Leg Press',             'Leg Press Machine'),
-
-  ('Romanian Deadlift',     'Barbell'),
-  ('Romanian Deadlift',     'Weight Plates'),
-
-  ('Hamstring Curl',        'Hamstring Curl Machine'),
-
-  ('Leg Extension',         'Leg Extension Machine'),
-
-  ('Calf Raise',            'Calf Raise Machine'),
-  ('Calf Raise',            'Smith Machine'),
-
-  ('Goblet Squat',          'Kettlebell'),
-
-  ('Barbell Deadlift',      'Barbell'),
-  ('Barbell Deadlift',      'Weight Plates'),
-
-  ('Sumo Deadlift',         'Barbell'),
-  ('Sumo Deadlift',         'Weight Plates'),
-
-  ('Trap Bar Deadlift',     'Trap Bar'),
-  ('Trap Bar Deadlift',     'Weight Plates'),
-
-  ('Barbell Shoulder Press','Barbell'),
-  ('Barbell Shoulder Press','Bench'),
-  ('Barbell Shoulder Press','Power Rack'),
-  ('Barbell Shoulder Press','Weight Plates'),
-
-  ('Dumbbell Shoulder Press','Dumbbells'),
-  ('Dumbbell Shoulder Press','Bench'),
-
-  ('Lateral Raise',         'Dumbbells'),
-  ('Lateral Raise',         'Resistance Bands'),
-
-  ('Front Raise',           'Dumbbells'),
-  ('Front Raise',           'Resistance Bands'),
-
-  ('Rear Delt Fly',         'Dumbbells'),
-  ('Rear Delt Fly',         'Pec Deck Machine'),
-
-  ('Barbell Bicep Curl',    'EZ Bar'),
-  ('Barbell Bicep Curl',    'Weight Plates'),
-
-  ('Dumbbell Bicep Curl',   'Dumbbells'),
-
-  ('Hammer Curl',           'Dumbbells'),
-
-  ('Tricep Rope Pushdown',  'Cable Machine'),
-
-  ('Tricep Dips',           'Dip Bars'),
-
-  ('Overhead Tricep Extension','Dumbbells'),
-
-  ('Cable Crunch',          'Cable Machine'),
-  ('Cable Crunch',          'Ab Crunch Machine'),
-
-  ('Plank',                 'Medicine Ball'),
-
-  ('Hanging Leg Raise',     'Pull Up Bar'),
-
-  ('Russian Twists',        'Medicine Ball'),
-
-  ('Treadmill Running',     'Treadmill'),
-  ('Stationary Bike',       'Stationary Bike'),
-  ('Stationary Bike',       'Spin Bike'),
-  ('Elliptical Trainer',    'Elliptical Trainer'),
-  ('Rowing Machine',        'Rowing Machine'),
-  ('Rowing Machine',        'Rowing Ergometer'),
-  ('Stair Climber',         'Stair Climber'),
-  ('Jump Rope',             'Jump Rope'),
-  ('Walking',               'Treadmill'),
-  ('Rowing Sprints',        'Rowing Ergometer'),
-  ('Spinning Class',        'Spin Bike'),
-  ('Stair Sprint',          'Stair Climber');
-
+-- Muscles
 INSERT INTO muscle (muscle_name, group_name)
 VALUES
   ('Pectoralis Major', 'Chest'),
   ('Pectoralis Minor', 'Chest'),
   ('Serratus Anterior', 'Chest'),
-
   ('Latissimus Dorsi', 'Back'),
   ('Trapezius Upper', 'Back'),
   ('Trapezius Middle', 'Back'),
@@ -1289,7 +1274,6 @@ VALUES
   ('Rhomboid Major', 'Back'),
   ('Rhomboid Minor', 'Back'),
   ('Teres Major', 'Back'),
-
   ('Anterior Deltoid', 'Shoulders'),
   ('Lateral Deltoid', 'Shoulders'),
   ('Posterior Deltoid', 'Shoulders'),
@@ -1297,31 +1281,124 @@ VALUES
   ('Infraspinatus', 'Shoulders'),
   ('Teres Minor', 'Shoulders'),
   ('Subscapularis', 'Shoulders'),
-
   ('Biceps Brachii Long Head', 'Biceps'),
   ('Biceps Brachii Short Head', 'Biceps'),
   ('Brachialis', 'Biceps'),
   ('Brachioradialis', 'Biceps'),
-
   ('Triceps Long Head', 'Triceps'),
   ('Triceps Lateral Head', 'Triceps'),
   ('Triceps Medial Head', 'Triceps'),
-
   ('Rectus Femoris', 'Quadriceps'),
   ('Vastus Lateralis', 'Quadriceps'),
   ('Vastus Medialis', 'Quadriceps'),
   ('Vastus Intermedius', 'Quadriceps'),
-
   ('Biceps Femoris', 'Hamstrings'),
   ('Semitendinosus', 'Hamstrings'),
   ('Semimembranosus', 'Hamstrings'),
-
   ('Gastrocnemius Medial Head', 'Calves'),
   ('Gastrocnemius Lateral Head', 'Calves'),
   ('Soleus', 'Calves'),
-
   ('Rectus Abdominis', 'Core'),
   ('External Oblique', 'Core'),
   ('Internal Oblique', 'Core'),
   ('Transversus Abdominis', 'Core'),
   ('Erector Spinae Lumbar', 'Core');
+
+-- Lifting Muscle relationships
+INSERT INTO lifting_muscle (exercise_name, muscle_name)
+VALUES
+  -- Chest exercises
+  ('Bench Press', 'Pectoralis Major'),
+  ('Bench Press', 'Anterior Deltoid'),
+  ('Bench Press', 'Triceps Long Head'),
+  ('Bench Press', 'Triceps Lateral Head'),
+  ('Incline Bench Press', 'Pectoralis Major'),
+  ('Incline Bench Press', 'Anterior Deltoid'),
+  ('Incline Bench Press', 'Triceps Long Head'),
+  ('Decline Bench Press', 'Pectoralis Major'),
+  ('Decline Bench Press', 'Triceps Long Head'),
+  ('Dumbbell Chest Press', 'Pectoralis Major'),
+  ('Dumbbell Chest Press', 'Anterior Deltoid'),
+  ('Dumbbell Chest Press', 'Triceps Long Head'),
+  ('Dumbbell Flyes', 'Pectoralis Major'),
+  ('Push Ups', 'Pectoralis Major'),
+  ('Push Ups', 'Anterior Deltoid'),
+  ('Push Ups', 'Triceps Long Head'),
+  
+  -- Back exercises
+  ('Lat Pulldown', 'Latissimus Dorsi'),
+  ('Lat Pulldown', 'Teres Major'),
+  ('Lat Pulldown', 'Biceps Brachii Long Head'),
+  ('Seated Row', 'Latissimus Dorsi'),
+  ('Seated Row', 'Rhomboid Major'),
+  ('Seated Row', 'Trapezius Middle'),
+  ('Bent Over Barbell Row', 'Latissimus Dorsi'),
+  ('Bent Over Barbell Row', 'Rhomboid Major'),
+  ('Bent Over Barbell Row', 'Trapezius Middle'),
+  ('Dumbbell Row', 'Latissimus Dorsi'),
+  ('Dumbbell Row', 'Rhomboid Major'),
+  ('Pull Ups', 'Latissimus Dorsi'),
+  ('Pull Ups', 'Biceps Brachii Long Head'),
+  ('Chin Ups', 'Latissimus Dorsi'),
+  ('Chin Ups', 'Biceps Brachii Long Head'),
+  
+  -- Leg exercises
+  ('Barbell Squat', 'Rectus Femoris'),
+  ('Barbell Squat', 'Vastus Lateralis'),
+  ('Barbell Squat', 'Vastus Medialis'),
+  ('Front Squat', 'Rectus Femoris'),
+  ('Front Squat', 'Vastus Lateralis'),
+  ('Leg Press', 'Rectus Femoris'),
+  ('Leg Press', 'Vastus Lateralis'),
+  ('Romanian Deadlift', 'Biceps Femoris'),
+  ('Romanian Deadlift', 'Semitendinosus'),
+  ('Romanian Deadlift', 'Erector Spinae Lumbar'),
+  ('Hamstring Curl', 'Biceps Femoris'),
+  ('Hamstring Curl', 'Semitendinosus'),
+  ('Leg Extension', 'Rectus Femoris'),
+  ('Leg Extension', 'Vastus Lateralis'),
+  ('Calf Raise', 'Gastrocnemius Medial Head'),
+  ('Calf Raise', 'Gastrocnemius Lateral Head'),
+  ('Calf Raise', 'Soleus'),
+  ('Goblet Squat', 'Rectus Femoris'),
+  ('Goblet Squat', 'Vastus Lateralis'),
+  
+  -- Deadlifts
+  ('Barbell Deadlift', 'Erector Spinae Lumbar'),
+  ('Barbell Deadlift', 'Biceps Femoris'),
+  ('Barbell Deadlift', 'Trapezius Upper'),
+  ('Sumo Deadlift', 'Biceps Femoris'),
+  ('Sumo Deadlift', 'Erector Spinae Lumbar'),
+  ('Trap Bar Deadlift', 'Biceps Femoris'),
+  ('Trap Bar Deadlift', 'Rectus Femoris'),
+  
+  -- Shoulder exercises
+  ('Barbell Shoulder Press', 'Anterior Deltoid'),
+  ('Barbell Shoulder Press', 'Lateral Deltoid'),
+  ('Barbell Shoulder Press', 'Triceps Long Head'),
+  ('Dumbbell Shoulder Press', 'Anterior Deltoid'),
+  ('Dumbbell Shoulder Press', 'Lateral Deltoid'),
+  ('Lateral Raise', 'Lateral Deltoid'),
+  ('Front Raise', 'Anterior Deltoid'),
+  ('Rear Delt Fly', 'Posterior Deltoid'),
+  
+  -- Arm exercises
+  ('Barbell Bicep Curl', 'Biceps Brachii Long Head'),
+  ('Barbell Bicep Curl', 'Biceps Brachii Short Head'),
+  ('Dumbbell Bicep Curl', 'Biceps Brachii Long Head'),
+  ('Dumbbell Bicep Curl', 'Biceps Brachii Short Head'),
+  ('Hammer Curl', 'Brachialis'),
+  ('Hammer Curl', 'Brachioradialis'),
+  ('Tricep Rope Pushdown', 'Triceps Long Head'),
+  ('Tricep Rope Pushdown', 'Triceps Lateral Head'),
+  ('Tricep Dips', 'Triceps Long Head'),
+  ('Tricep Dips', 'Triceps Lateral Head'),
+  ('Overhead Tricep Extension', 'Triceps Long Head'),
+  
+  -- Core exercises
+  ('Cable Crunch', 'Rectus Abdominis'),
+  ('Plank', 'Rectus Abdominis'),
+  ('Plank', 'Transversus Abdominis'),
+  ('Hanging Leg Raise', 'Rectus Abdominis'),
+  ('Russian Twists', 'External Oblique'),
+  ('Russian Twists', 'Internal Oblique');
