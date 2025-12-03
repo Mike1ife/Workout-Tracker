@@ -92,17 +92,6 @@ CREATE TABLE exercise_equipment (
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- Session Exercise
-CREATE TABLE session_exercise(
-	session_id INT NOT NULL,
-  exercise_name VARCHAR(64) NOT NULL,
-  CONSTRAINT session_exercise_pk PRIMARY KEY(session_id, exercise_name),
-  CONSTRAINT session_exercise_session_fk FOREIGN KEY(session_id) REFERENCES user_session(session_id)
-	  ON UPDATE CASCADE ON DELETE CASCADE,
-	CONSTRAINT session_exercise_exercise_fk FOREIGN KEY(exercise_name) REFERENCES exercise(exercise_name)
-	  ON UPDATE CASCADE ON DELETE CASCADE
-);
-
 -- Lifting
 CREATE TABLE lifting(
   exercise_name VARCHAR(64) NOT NULL,
@@ -138,20 +127,29 @@ CREATE TABLE lifting_muscle (
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- Lifting Set
-CREATE TABLE lifting_set (
+-- Lifting Section
+CREATE TABLE lifting_section(
+  lifting_section_id INT AUTO_INCREMENT,
   session_id INT NOT NULL,
   exercise_name VARCHAR(64) NOT NULL,
+  CONSTRAINT lifting_section_pk PRIMARY KEY (lifting_section_id),
+  CONSTRAINT lifting_section_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
+   ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT lifting_section_lifting_fk FOREIGN KEY (exercise_name) REFERENCES lifting(exercise_name)
+    ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- Lifting Set
+CREATE TABLE lifting_set (
+  lifting_section_id INT NOT NULL,
   set_num INT NOT NULL,
   weight DECIMAL(5,2),
   reps INT NOT NULL,
   CONSTRAINT lifting_set_num_chk CHECK (set_num >= 1),
   CONSTRAINT lifting_weight_chk CHECK (weight >= 0),
   CONSTRAINT lifting_reps_chk CHECK (reps > 0),
-  CONSTRAINT lifting_set_pk PRIMARY KEY (session_id, exercise_name, set_num),
-  CONSTRAINT lifting_set_session_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT lifting_set_lifting_fk FOREIGN KEY (exercise_name) REFERENCES lifting(exercise_name)
+  CONSTRAINT lifting_set_pk PRIMARY KEY (lifting_section_id,set_num),
+  CONSTRAINT lifting_set_section_fk FOREIGN KEY (lifting_section_id) REFERENCES lifting_section(lifting_section_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -163,19 +161,31 @@ CREATE TABLE aerobics (
     ON UPDATE CASCADE ON DELETE CASCADE
 );
 
--- Aerobics Metric
-CREATE TABLE aerobics_metric (
+-- Aerobics Section
+CREATE TABLE aerobics_section(
+  aerobics_section_id INT AUTO_INCREMENT,
   session_id INT NOT NULL,
   exercise_name VARCHAR(64) NOT NULL,
-  duration TIME NOT NULL,
-  distance DEC(6,2) NOT NULL,
-  CONSTRAINT aerobics_distance_chk CHECK (distance > 0),
-  CONSTRAINT aerobics_metric_pk PRIMARY KEY (session_id, exercise_name),
-  CONSTRAINT aerobics_metric_session_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
+  CONSTRAINT aerobics_section_pk PRIMARY KEY (aerobics_section_id),
+  CONSTRAINT aerobics_section_session_fk FOREIGN KEY (session_id) REFERENCES user_session(session_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT aerobics_metric_aerobics_fk FOREIGN KEY (exercise_name) REFERENCES aerobics(exercise_name)
+  CONSTRAINT aerobics_section_aerobics_fk FOREIGN KEY (exercise_name) REFERENCES aerobics(exercise_name)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
+
+-- Metric
+CREATE TABLE metric (
+  metric_id INT AUTO_INCREMENT,
+  aerobics_section_id INT NOT NULL,
+  duration TIME NOT NULL,
+  distance DEC(6,2) NOT NULL,
+  CONSTRAINT metric_distance_chk CHECK (distance > 0),
+  CONSTRAINT metric_pk PRIMARY KEY (metric_id),
+  CONSTRAINT metric_section_uk UNIQUE (aerobics_section_id),
+  CONSTRAINT metric_section_fk FOREIGN KEY (aerobics_section_id) REFERENCES aerobics_section(aerobics_section_id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 
 -- Stored Procedure for Backend
 
