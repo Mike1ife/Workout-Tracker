@@ -75,12 +75,28 @@ def delete_user(userId: int):
 
 def fetch_all_foods() -> List[Food]:
     rows = _call_proc("sp_fetch_all_foods")
-    return [Food(**row) for row in rows]
+    return [
+        Food(
+            foodName=row["food_name"],
+            calories=row.get("calories"),
+            carbohydrate=row["carbohydrate"],
+            protein=row["protein"],
+            fat=row["fat"]
+        )
+        for row in rows
+    ]
 
 
 def fetch_food(foodName: str) -> Food:
     rows = _call_proc("sp_fetch_food", (foodName,))
-    return Food(**rows[0])
+    row = rows[0]
+    return Food(
+        foodName=row["food_name"],
+        calories=row.get("calories"),
+        carbohydrate=row["carbohydrate"],
+        protein=row["protein"],
+        fat=row["fat"]
+    )
 
 
 def fetch_foods_by_user_id(userId: int) -> List[Food]:

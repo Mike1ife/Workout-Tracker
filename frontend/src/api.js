@@ -204,7 +204,6 @@ export const foodAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         foodName: foodData.foodName,
-        calories: foodData.calories,
         carbohydrate: foodData.carbohydrate,
         protein: foodData.protein,
         fat: foodData.fat

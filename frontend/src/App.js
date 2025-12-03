@@ -974,13 +974,11 @@ const Dashboard = () => {
                 placeholder="e.g., Chicken Breast"
               />
             </div>
-
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Carbs (g)</label>
                 <input 
-                  type="number" 
-                  step="0.1"
+                  type="text" 
                   value={formData.carbohydrate}
                   onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
@@ -990,8 +988,7 @@ const Dashboard = () => {
               <div className="form-group">
                 <label className="form-label">Protein (g)</label>
                 <input 
-                  type="number" 
-                  step="0.1"
+                  type="text"
                   value={formData.protein}
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
@@ -999,12 +996,10 @@ const Dashboard = () => {
                 />
               </div>
             </div>
-
             <div className="form-group">
               <label className="form-label">Fat (g)</label>
               <input 
-                type="number" 
-                step="0.1"
+                type="text"
                 value={formData.fat}
                 onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
