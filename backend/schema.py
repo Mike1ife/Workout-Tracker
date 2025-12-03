@@ -3,9 +3,11 @@ from typing import Optional, Literal
 
 
 class User(BaseModel):
+    user_id: Optional[int] = None
     first_name: str
     last_name: str
     email: str
+    password: str
     age: Optional[int]
     gender: Literal["Male", "Female", "Other"]
 

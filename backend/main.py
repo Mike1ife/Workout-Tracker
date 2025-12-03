@@ -142,6 +142,16 @@ async def get_exercises():
     return {"exercises": fetch_exercises()}
 
 
+@app.get("/exercises/aerobics", tags=["Exercise"])
+async def get_aerobics():
+    return {"aerobics": fetch_aerobics()}
+
+
+@app.get("/exercises/lifting", tags=["Lifting"])
+async def get_liftings():
+    return {"liftings": fetch_liftings()}
+
+
 @app.get("/exercises/{exerciseName}", tags=["Exercise"])
 async def get_exercise_by_name(exerciseName: str):
     return {"exercise": fetch_exercise_by_name(exerciseName=exerciseName)}
@@ -155,11 +165,6 @@ async def get_exercise_equipments(exerciseName: str):
 @app.get("/equipment/{equipmentName}/exercise", tags=["Exercise"])
 async def get_exercise_by_equipment(equipmentName: str):
     return {"exercises": fetch_exercise_by_equipment_name(equipmentName=equipmentName)}
-
-
-@app.get("/exercises/aerobics", tags=["Exercise"])
-async def get_aerobics():
-    return {"aerobics": fetch_aerobics()}
 
 
 @app.get("/exercises/aerobics/{aerobicsName}", tags=["Aerobics"])
@@ -192,11 +197,6 @@ async def update_aerobics_metric(aerobicsName: str, sessionId: int, metric: Metr
 async def delete_aerobics_metric(aerobicsName: str, sessionId: int):
     delete_aerobics_metric(sessionId=sessionId, aerobicsName=aerobicsName)
     return {"message": "Delete metric successfully"}
-
-
-@app.get("/exercises/lifting", tags=["Lifting"])
-async def get_liftings():
-    return {"liftings": fetch_liftings()}
 
 
 @app.get("/exercises/lifting/{liftingName}", tags=["Lifting"])
