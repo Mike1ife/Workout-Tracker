@@ -3,7 +3,18 @@ const BASE_URL = 'http://localhost:8000';
 const handleResponse = async (response) => {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new Error(error.detail || 'Request failed');
+    
+    if (Array.isArray(error.detail)) {
+      const messages = error.detail.map(err => {
+        const loc = err.loc ? err.loc.join(' -> ') : 'unknown';
+        return `${loc}: ${err.msg}`;
+      }).join('; ');
+      throw new Error(messages);
+    } else if (typeof error.detail === 'string') {
+      throw new Error(error.detail);
+    } else {
+      throw new Error(JSON.stringify(error.detail) || 'Request failed');
+    }
   }
   return response.json();
 };
@@ -117,6 +128,12 @@ export const sessionAPI = {
       method: 'DELETE'
     });
     return handleResponse(response);
+  },
+
+  getSessionExercises: async (sessionId) => {
+    const response = await fetch(`${BASE_URL}/sessions/${sessionId}/exercises`);
+    const data = await handleResponse(response);
+    return data.exercises;
   }
 };
 

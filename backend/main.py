@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # Add this import
+from fastapi.middleware.cors import CORSMiddleware
 from utils import *
 
 app = FastAPI()
@@ -107,6 +107,23 @@ async def get_user_sessions(userId: int):
     return {"sessions": fetch_sessions_by_user_id(userId=userId)}
 
 
+@app.post("/sessions/exercises", tags=["Session Exercise"])
+async def add_session_exercise(session_exercise: SessionExercise):
+    insert_session_exercise(sessionExercise=session_exercise)
+    return {"message": "Add exercise to session successfully"}
+
+
+@app.delete("/sessions/exercises/{sessionId}/{exerciseName}", tags=["Session Exercise"])
+async def delete_session_exercise(sessionId: int, exerciseName: str):
+    delete_session_exercise(sessionId=sessionId, exerciseName=exerciseName)
+    return {"message": "Delete session exercise successfully"}
+
+
+@app.get("/sessions/{sessionId}/exercises", tags=["Session Exercise"])
+async def get_session_exercises(sessionId: int):
+    return {"exercises": fetch_exercises_by_session_id(sessionId=sessionId)}
+
+
 @app.post("/sessions/{userId}", tags=["Session"])
 async def add_user_session(userId: int, session: Session):
     insert_session(userId=userId, session=session)
@@ -126,8 +143,8 @@ async def delete_user_session(userId: int, sessionId: int):
 
 
 @app.post("/sessions/exercises", tags=["Session Exercise"])
-async def add_session_exercise(sessionExercise: SessionExercise):
-    insert_session_exercise(sessionExercise=sessionExercise)
+async def add_session_exercise(session_exercise: SessionExercise):
+    insert_session_exercise(sessionExercise=session_exercise)
     return {"message": "Add exercise to session successfully"}
 
 
@@ -135,6 +152,11 @@ async def add_session_exercise(sessionExercise: SessionExercise):
 async def delete_session_exercise(sessionId: int, exerciseName: str):
     delete_session_exercise(sessionId=sessionId, exerciseName=exerciseName)
     return {"message": "Delete session exercise successfully"}
+
+
+@app.get("/sessions/{sessionId}/exercises", tags=["Session Exercise"])
+async def get_session_exercises(sessionId: int):
+    return {"exercises": fetch_exercises_by_session_id(sessionId=sessionId)}
 
 
 @app.get("/exercises", tags=["Exercise"])
@@ -226,7 +248,7 @@ async def update_lifting_set(liftingName: str, sessionId: int, setNum: int, set:
 @app.delete(
     "/exercises/lifting/{liftingName}/sets/{sessionId}/{setNum}", tags=["Lifting"]
 )
-async def delete_lifting_set(liftingName: str, sessionId: int, setNum: int):
+async def delete_lifting_set_endpoint(liftingName: str, sessionId: int, setNum: int):
     delete_lifting_set(sessionId=sessionId, liftingName=liftingName, setNum=setNum)
     return {"message": "Delete set successfully"}
 

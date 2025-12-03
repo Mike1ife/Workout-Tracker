@@ -826,6 +826,18 @@ BEGIN
     WHERE group_name = p_group_name;
 END $$
 
+CREATE PROCEDURE sp_fetch_exercises_by_session_id(IN p_session_id INT)
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM user_session WHERE session_id = p_session_id) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Session does not exist';
+    END IF;
+
+    SELECT se.exercise_name
+    FROM session_exercise AS se
+    WHERE se.session_id = p_session_id;
+END $$
+
 DELIMITER ;
 
 

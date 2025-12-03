@@ -204,6 +204,11 @@ def delete_session_exercise(sessionId: int, exerciseName: str):
     _call_proc("sp_delete_session_exercise", (sessionId, exerciseName))
 
 
+def fetch_exercises_by_session_id(sessionId: int) -> List[str]:
+    rows = _call_proc("sp_fetch_exercises_by_session_id", (sessionId,))
+    return [row["exercise_name"] for row in rows]
+
+
 def fetch_exercises() -> List[dict]:
     rows = _call_proc("sp_fetch_exercises")
     return [

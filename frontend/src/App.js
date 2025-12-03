@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Calendar, Dumbbell, Activity, Apple, Heart, Plus, ChevronRight, TrendingUp, Clock, Trash2, User, LogOut } from 'lucide-react';
 import './App.css';
 import api from './api';
@@ -23,7 +23,6 @@ const LoginRegister = ({ onLogin }) => {
 
     try {
       if (isLogin) {
-        // Login - find user by email and password
         const users = await api.user.getAllUsers();
         const user = users.find(u => u.email === formData.email && u.password === formData.password);
         
@@ -33,7 +32,6 @@ const LoginRegister = ({ onLogin }) => {
           setError('Invalid email or password');
         }
       } else {
-        // Register - create new user
         if (!formData.first_name || !formData.last_name || !formData.email || !formData.password) {
           setError('Please fill in all required fields');
           setLoading(false);
@@ -49,7 +47,6 @@ const LoginRegister = ({ onLogin }) => {
           gender: formData.gender
         });
 
-        // After registration, get all users and find the newly created one
         const users = await api.user.getAllUsers();
         const newUser = users.find(u => u.email === formData.email && u.password === formData.password);
         if (newUser) {
@@ -216,9 +213,30 @@ const Dashboard = () => {
   const [showAddSet, setShowAddSet] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [exerciseRefreshKey, setExerciseRefreshKey] = useState(0);
+  const [setRefreshTrigger, setSetRefreshTrigger] = useState(0);
+  
+  const isFetchingRef = useRef(false);
+
+  const fetchSessionExercises = useCallback(async (sessionId) => {
+    if (isFetchingRef.current) return;
+    
+    isFetchingRef.current = true;
+    try {
+      const exerciseNames = await api.session.getSessionExercises(sessionId);
+      const exerciseDetails = exerciseNames.map(name => ({
+        exerciseName: name
+      }));
+      setSessionExercises(exerciseDetails);
+    } catch (err) {
+      console.error('Error fetching session exercises:', err);
+      setSessionExercises([]);
+    } finally {
+      isFetchingRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
     const savedUser = localStorage.getItem('workout_tracker_user');
     if (savedUser) {
       const user = JSON.parse(savedUser);
@@ -253,7 +271,6 @@ const Dashboard = () => {
   };
 
   const handleLogin = (user) => {
-    console.log('Login user object:', user);
     setCurrentUser(user);
     setIsAuthenticated(true);
     localStorage.setItem('workout_tracker_user', JSON.stringify(user));
@@ -287,7 +304,6 @@ const Dashboard = () => {
 
   const fetchAllData = async () => {
     if (!currentUser.user_id) {
-      console.log('No user_id available yet');
       return;
     }
 
@@ -309,7 +325,6 @@ const Dashboard = () => {
       const errorMessage = err.message || JSON.stringify(err);
       setError(errorMessage);
       console.error('Error fetching data:', err);
-      console.error('Error details:', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -381,21 +396,6 @@ const Dashboard = () => {
   const handleSessionClick = (session) => {
     setSelectedSession(session);
     setActiveTab('session-detail');
-  };
-
-  const fetchSessionExercises = async (sessionId) => {
-    try {
-      // Fetch all exercises in this session
-      // For lifting exercises, get sets
-      // For aerobics, get metrics
-      const liftingSets = {};
-      const aerobicsMetrics = {};
-      
-      // This is a simplified version - you'd need to create endpoints to get exercises by session
-      setSessionExercises([]);
-    } catch (err) {
-      console.error('Error fetching session exercises:', err);
-    }
   };
 
   const NewSessionForm = () => {
@@ -508,11 +508,17 @@ const Dashboard = () => {
       }
 
       try {
+        console.log('Sending:', {
+          sessionId: selectedSession.session_id,
+          exerciseName: selectedExerciseName
+        });
         await api.session.addExerciseToSession(selectedSession.session_id, selectedExerciseName);
         setShowAddExercise(false);
+        setExerciseRefreshKey(prev => prev + 1);
         alert('Exercise added to session!');
       } catch (err) {
-        alert('Error adding exercise: ' + err.message);
+        console.error('Full error:', err);
+        alert('Error adding exercise: ' + (err.message || 'Unknown error'));
       }
     };
 
@@ -581,6 +587,7 @@ const Dashboard = () => {
           }
         );
         setShowAddSet(false);
+        setSetRefreshTrigger(prev => prev + 1);
         alert('Set added successfully!');
       } catch (err) {
         alert('Error adding set: ' + err.message);
@@ -643,25 +650,93 @@ const Dashboard = () => {
   };
 
   const SessionDetailView = () => {
-    const [sets, setSets] = useState({});
+    const [exerciseSets, setExerciseSets] = useState({});
     const [expandedExercises, setExpandedExercises] = useState({});
+    const [localExercises, setLocalExercises] = useState([]);
+    const isFetchingLocalRef = useRef(false);
 
     useEffect(() => {
-      if (selectedSession) {
-        loadSessionData();
+      const fetchExercises = async () => {
+        if (isFetchingLocalRef.current) return;
+        
+        isFetchingLocalRef.current = true;
+        try {
+          const exerciseNames = await api.session.getSessionExercises(selectedSession.session_id);
+          const exerciseDetails = exerciseNames.map(name => ({
+            exerciseName: name
+          }));
+          setLocalExercises(exerciseDetails);
+        } catch (err) {
+          console.error('Error fetching session exercises:', err);
+          setLocalExercises([]);
+        } finally {
+          isFetchingLocalRef.current = false;
+        }
+      };
+
+      if (selectedSession?.session_id) {
+        fetchExercises();
       }
-    }, [selectedSession]);
+    }, [selectedSession?.session_id, exerciseRefreshKey]);
 
-    const loadSessionData = async () => {
-      // Load sets for each lifting exercise
-      // This is a placeholder - you'd need to implement this based on your API
-    };
+    useEffect(() => {
+      if (selectedExercise && setRefreshTrigger > 0) {
+        refreshSets(selectedExercise.exerciseName);
+      }
+    }, [setRefreshTrigger]);
 
-    const toggleExercise = (exerciseName) => {
+    const toggleExercise = async (exerciseName) => {
+      const isCurrentlyExpanded = expandedExercises[exerciseName];
+      
       setExpandedExercises(prev => ({
         ...prev,
         [exerciseName]: !prev[exerciseName]
       }));
+
+      if (!isCurrentlyExpanded && !exerciseSets[exerciseName]) {
+        const isLiftingExercise = liftingExercises.some(e => e.exerciseName === exerciseName);
+        
+        if (isLiftingExercise) {
+          try {
+            const sets = await api.lifting.getSets(exerciseName, selectedSession.session_id);
+            setExerciseSets(prev => ({
+              ...prev,
+              [exerciseName]: sets
+            }));
+          } catch (err) {
+            console.error('Error fetching sets:', err);
+            setExerciseSets(prev => ({
+              ...prev,
+              [exerciseName]: []
+            }));
+          }
+        }
+      }
+    };
+
+    const refreshSets = async (exerciseName) => {
+      try {
+        const sets = await api.lifting.getSets(exerciseName, selectedSession.session_id);
+        setExerciseSets(prev => ({
+          ...prev,
+          [exerciseName]: sets
+        }));
+      } catch (err) {
+        console.error('Error refreshing sets:', err);
+      }
+    };
+
+    const handleDeleteSet = async (exerciseName, setNum) => {
+      if (!window.confirm('Are you sure you want to delete this set?')) {
+        return;
+      }
+
+      try {
+        await api.lifting.deleteSet(exerciseName, selectedSession.session_id, setNum);
+        await refreshSets(exerciseName);
+      } catch (err) {
+        alert('Error deleting set: ' + err.message);
+      }
     };
 
     return (
@@ -703,117 +778,90 @@ const Dashboard = () => {
         <div className="exercises-section">
           <h3 className="section-title">Exercises</h3>
           
-          {/* Demo exercises - replace with actual data */}
-          <div className="exercise-list">
-            {liftingExercises.slice(0, 3).map((exercise, i) => {
-              const isExpanded = expandedExercises[exercise.exerciseName];
-              return (
-                <div key={i} className="exercise-detail-card">
-                  <div 
-                    className="exercise-detail-header"
-                    onClick={() => toggleExercise(exercise.exerciseName)}
-                  >
-                    <div className="exercise-detail-title">
-                      <Dumbbell size={20} />
-                      <span>{exercise.exerciseName}</span>
-                    </div>
-                    <div className="exercise-detail-actions">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedExercise(exercise);
-                          setShowAddSet(true);
-                        }}
-                        className="btn-small"
-                      >
-                        <Plus size={16} />
-                        Add Set
-                      </button>
-                      <ChevronRight 
-                        className={`chevron-icon ${isExpanded ? 'chevron-expanded' : ''}`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {isExpanded && (
-                    <div className="exercise-detail-content">
-                      <div className="sets-table">
-                        <div className="sets-table-header">
-                          <span>Set</span>
-                          <span>Weight</span>
-                          <span>Reps</span>
-                          <span>Actions</span>
-                        </div>
-                        {/* Demo data - replace with actual sets */}
-                        <div className="sets-table-row">
-                          <span>1</span>
-                          <span>135 lbs</span>
-                          <span>10</span>
-                          <button className="btn-delete" style={{padding: '0.25rem'}}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                        <div className="sets-table-row">
-                          <span>2</span>
-                          <span>155 lbs</span>
-                          <span>8</span>
-                          <button className="btn-delete" style={{padding: '0.25rem'}}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                        <div className="sets-table-row">
-                          <span>3</span>
-                          <span>175 lbs</span>
-                          <span>6</span>
-                          <button className="btn-delete" style={{padding: '0.25rem'}}>
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {aerobicExercises.slice(0, 1).map((exercise, i) => {
-              const isExpanded = expandedExercises[exercise.exerciseName];
-              return (
-                <div key={`aero-${i}`} className="exercise-detail-card">
-                  <div 
-                    className="exercise-detail-header"
-                    onClick={() => toggleExercise(exercise.exerciseName)}
-                  >
-                    <div className="exercise-detail-title">
-                      <Activity size={20} />
-                      <span>{exercise.exerciseName}</span>
-                    </div>
-                    <ChevronRight 
-                      className={`chevron-icon ${isExpanded ? 'chevron-expanded' : ''}`}
-                    />
-                  </div>
-                  
-                  {isExpanded && (
-                    <div className="exercise-detail-content">
-                      <div className="aerobics-metrics">
-                        <div className="metric-item">
-                          <span className="metric-label">Duration</span>
-                          <span className="metric-value">30:00</span>
-                        </div>
-                        <div className="metric-item">
-                          <span className="metric-label">Distance</span>
-                          <span className="metric-value">3.5 mi</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {liftingExercises.length === 0 && aerobicExercises.length === 0 && (
+          {localExercises.length === 0 ? (
             <p className="no-data">No exercises added yet. Click "Add Exercise" to get started!</p>
+          ) : (
+            <div className="exercise-list">
+              {localExercises.map((exercise, i) => {
+                const isExpanded = expandedExercises[exercise.exerciseName];
+                const isAerobic = aerobicExercises.some(e => e.exerciseName === exercise.exerciseName);
+                
+                return (
+                  <div key={i} className="exercise-detail-card">
+                    <div 
+                      className="exercise-detail-header"
+                      onClick={() => toggleExercise(exercise.exerciseName)}
+                    >
+                      <div className="exercise-detail-title">
+                        {isAerobic ? <Activity size={20} /> : <Dumbbell size={20} />}
+                        <span>{exercise.exerciseName}</span>
+                      </div>
+                      <div className="exercise-detail-actions">
+                        {!isAerobic && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedExercise(exercise);
+                              setShowAddSet(true);
+                            }}
+                            className="btn-small"
+                          >
+                            <Plus size={16} />
+                            Add Set
+                          </button>
+                        )}
+                        <ChevronRight 
+                          className={`chevron-icon ${isExpanded ? 'chevron-expanded' : ''}`}
+                        />
+                      </div>
+                    </div>
+                    
+                    {isExpanded && (
+                      <div className="exercise-detail-content">
+                        {isAerobic ? (
+                          <div className="aerobics-metrics">
+                            <div className="metric-item">
+                              <span className="metric-label">Duration</span>
+                              <span className="metric-value">--:--</span>
+                            </div>
+                            <div className="metric-item">
+                              <span className="metric-label">Distance</span>
+                              <span className="metric-value">-- mi</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="sets-table">
+                            <div className="sets-table-header">
+                              <span>Set</span>
+                              <span>Weight</span>
+                              <span>Reps</span>
+                              <span>Actions</span>
+                            </div>
+                            {exerciseSets[exercise.exerciseName] && exerciseSets[exercise.exerciseName].length > 0 ? (
+                              exerciseSets[exercise.exerciseName].map((set, setIndex) => (
+                                <div key={setIndex} className="sets-table-row">
+                                  <span>Set {set.setNum}</span>
+                                  <span>{set.weight} lbs</span>
+                                  <span>{set.reps} reps</span>
+                                  <button 
+                                    onClick={() => handleDeleteSet(exercise.exerciseName, set.setNum)}
+                                    className="btn-delete"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="no-data" style={{marginTop: '1rem'}}>No sets added yet</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
@@ -1294,14 +1342,14 @@ const Dashboard = () => {
           <div>
             <div className="section-header">
               <h2 className="page-title">Nutrition Tracking</h2>
-              <div style={{display: 'flex', gap: '0.5rem'}}>
+              <div className="section-actions">
                 <button onClick={() => setShowLogFood(true)} className="btn-primary">
                   <Plus className="btn-icon" />
                   Log Food
                 </button>
                 <button onClick={() => setShowNewFood(true)} className="btn-secondary">
                   <Plus className="btn-icon" />
-                  Add New Food
+                  Add Food
                 </button>
               </div>
             </div>
