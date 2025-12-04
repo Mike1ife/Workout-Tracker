@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Dumbbell, Activity, Apple, Heart, Plus, Minus, ChevronRight, TrendingUp, Clock, Trash2, User, LogOut } from 'lucide-react';
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './App.css';
 import api from './api';
 
@@ -349,6 +350,25 @@ const Dashboard = () => {
     const diff = Math.abs(endDate - startDate);
     const minutes = Math.floor(diff / 1000 / 60);
     return `${minutes} min`;
+  };
+
+  const calculateDailyMacros = (foods) => {
+    let totalCarbs = 0;
+    let totalProtein = 0;
+    let totalFat = 0;
+    
+    foods.forEach(food => {
+      const qty = food.quantity || 1;
+      totalCarbs += (food.carbohydrate || 0) * qty;
+      totalProtein += (food.protein || 0) * qty;
+      totalFat += (food.fat || 0) * qty;
+    });
+    
+    return [
+      { name: 'Carbs', value: Math.round(totalCarbs * 10) / 10, color: '#f59e0b' },
+      { name: 'Protein', value: Math.round(totalProtein * 10) / 10, color: '#3b82f6' },
+      { name: 'Fat', value: Math.round(totalFat * 10) / 10, color: '#10b981' }
+    ];
   };
 
   const getFilteredFoodLogs = () => {
@@ -2265,6 +2285,93 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {(() => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              const todaysFoods = userFoods.filter(food => {
+                const foodDate = new Date(food.create_at);
+                foodDate.setHours(0, 0, 0, 0);
+                return foodDate.getTime() === today.getTime();
+              });
+              
+              if (todaysFoods.length > 0) {
+                const macroData = calculateDailyMacros(todaysFoods);
+                const totalGrams = macroData.reduce((sum, item) => sum + item.value, 0);
+                const totalCalories = todaysFoods.reduce((sum, food) => {
+                  return sum + ((food.calories || 0) * (food.quantity || 1));
+                }, 0);
+                
+                return (
+                  <div className="card card-spacing">
+                    <h3 className="card-title">Today's Macro Distribution</h3>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                      <ResponsiveContainer width={300} height={300}>
+                        <PieChart>
+                          <Pie
+                            data={macroData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, value }) => `${name}: ${value}g`}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {macroData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                            Total Calories Today
+                          </div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>
+                            {Math.round(totalCalories)} cal
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                            Total Macros
+                          </div>
+                          <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>
+                            {totalGrams.toFixed(1)}g
+                          </div>
+                        </div>
+                        <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '0.5rem 0' }} />
+                        {macroData.map((macro, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ 
+                              width: '12px', 
+                              height: '12px', 
+                              backgroundColor: macro.color, 
+                              borderRadius: '2px' 
+                            }} />
+                            <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                              {macro.name}: {macro.value}g ({Math.round((macro.value / totalGrams) * 100)}%)
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else {
+                return (
+                  <div className="card card-spacing">
+                    <h3 className="card-title">Today's Macro Distribution</h3>
+                    <p className="no-data">No food logged today. Start logging to see your macro breakdown!</p>
+                  </div>
+                );
+              }
+            })()}
+            
             <div className="card card-spacing">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3 className="card-title" style={{ margin: 0 }}>Food Log</h3>
@@ -2454,12 +2561,128 @@ const Dashboard = () => {
                 Add Record
               </button>
             </div>
+            
+            {healthRecords.length > 0 && (
+              <div className="card card-spacing">
+                <h3 className="card-title">Health Progress</h3>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+                  gap: '2rem' 
+                }}>
+                  <div>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#111827', 
+                      marginBottom: '1rem',
+                      textAlign: 'center'
+                    }}>
+                      Weight Progress
+                    </h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart 
+                        data={healthRecords.slice().reverse()}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="createdAt" 
+                          tickFormatter={(value) => formatDateTime(value)}
+                          style={{ fontSize: '0.75rem' }}
+                        />
+                        <YAxis 
+                          label={{ value: 'Weight (lbs)', angle: -90, position: 'insideLeft' }}
+                          domain={(() => {
+                            const weights = healthRecords.map(r => r.weight);
+                            const minWeight = Math.min(...weights);
+                            const maxWeight = Math.max(...weights);
+                            const range = maxWeight - minWeight;
+                            const padding = Math.max(range * 0.2, 5);
+                            return [
+                              Math.floor(minWeight - padding),
+                              Math.ceil(maxWeight + padding)
+                            ];
+                          })()}
+                        />
+                        <Tooltip 
+                          labelFormatter={(value) => formatDateTime(value)}
+                          formatter={(value) => [`${value} lbs`, 'Weight']}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="weight" 
+                          stroke="#2563eb" 
+                          name="Weight (lbs)" 
+                          strokeWidth={3}
+                          dot={{ r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div>
+                    <h4 style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: '600', 
+                      color: '#111827', 
+                      marginBottom: '1rem',
+                      textAlign: 'center'
+                    }}>
+                      Body Fat Progress
+                    </h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart 
+                        data={healthRecords.slice().reverse()}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="createdAt" 
+                          tickFormatter={(value) => formatDateTime(value)}
+                          style={{ fontSize: '0.75rem' }}
+                        />
+                        <YAxis 
+                          label={{ value: 'Body Fat %', angle: -90, position: 'insideLeft' }}
+                          domain={(() => {
+                            const bodyFats = healthRecords.map(r => r.body_fat_percent);
+                            const minBF = Math.min(...bodyFats);
+                            const maxBF = Math.max(...bodyFats);
+                            const range = maxBF - minBF;
+                            const padding = Math.max(range * 0.2, 2);
+                            return [
+                              Math.max(0, Math.floor(minBF - padding)),
+                              Math.min(100, Math.ceil(maxBF + padding)) 
+                            ];
+                          })()}
+                        />
+                        <Tooltip 
+                          labelFormatter={(value) => formatDateTime(value)}
+                          formatter={(value) => [`${value}%`, 'Body Fat']}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="body_fat_percent" 
+                          stroke="#059669" 
+                          name="Body Fat %" 
+                          strokeWidth={3}
+                          dot={{ r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="card">
+              <h3 className="card-title">All Records</h3>
               <div className="health-records-list">
                 {healthRecords.map((record, i) => (
                   <div key={i} className="health-record-card">
                     <div>
-                      <span className="health-record-date">{formatDate(record.createdAt)}</span>
+                      <span className="health-record-date">{formatDateTime(record.createdAt)}</span>
                       <div className="health-record-stats">
                         <div>
                           <span className="label">Weight: </span>
