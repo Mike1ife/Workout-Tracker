@@ -286,9 +286,15 @@ def fetch_exercise_by_name(exerciseName: str) -> dict:
     }
 
 
-def fetch_equipments_by_exercise_name(exerciseName: str) -> List[Equipment]:
+def fetch_equipments_by_exercise_name(exerciseName: str) -> List[dict]:
     rows = _call_proc("sp_fetch_equipments_by_exercise_name", (exerciseName,))
-    return [Equipment(**row) for row in rows]
+    return [
+        {
+            "equipmentName": row["equipment_name"],
+            "description": row.get("description")
+        }
+        for row in rows
+    ]
 
 
 def fetch_exercise_by_equipment_name(equipmentName: str) -> List[dict]:
@@ -403,9 +409,14 @@ def delete_lifting_section_set(sectionId: int, setNum: int):
     _call_proc("sp_delete_lifting_section_set", (sectionId, setNum))
 
 
-def fetch_muscles_by_lifting_name(liftingName: str) -> List[Muscle]:
+def fetch_muscles_by_lifting_name(liftingName: str) -> List[dict]:
     rows = _call_proc("sp_fetch_muscles_by_lifting_name", (liftingName,))
-    return [Muscle(**row) for row in rows]
+    return [
+        {
+            "muscleName": row["muscle_name"]
+        }
+        for row in rows
+    ]
 
 
 def fetch_liftings_by_muscle_name(muscleName: str) -> List[dict]:

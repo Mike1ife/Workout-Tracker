@@ -675,6 +675,79 @@ body {
   line-height: 1.5;
 }
 
+.exercise-equipment {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.equipment-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.equipment-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.equipment-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.25rem;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.equipment-tag-more {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.exercise-muscles {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.muscles-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.muscles-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.muscle-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.25rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.muscle-tag-more {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
 .exercises-section {
   background-color: white;
   border-radius: 0.5rem;

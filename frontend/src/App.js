@@ -226,6 +226,8 @@ const Dashboard = () => {
   const [editingSession, setEditingSession] = useState(null);
   const [showAddAerobicMetric, setShowAddAerobicMetric] = useState(false);
   const [selectedAerobicExercise, setSelectedAerobicExercise] = useState(null);
+  const [exerciseMuscles, setExerciseMuscles] = useState({});
+  const [exerciseEquipment, setExerciseEquipment] = useState({});
 
   useEffect(() => {
     const savedUser = localStorage.getItem('workout_tracker_user');
@@ -293,6 +295,32 @@ const Dashboard = () => {
       setExercises(allExercises);
       setLiftingExercises(liftings);
       setAerobicExercises(aerobics);
+      
+      const musclePromises = liftings.map(ex => 
+        fetch(`http://localhost:8000/exercises/lifting/${ex.exerciseName}/muscles`)
+          .then(r => r.json())
+          .then(data => ({ exerciseName: ex.exerciseName, muscles: data.muscles }))
+          .catch(() => ({ exerciseName: ex.exerciseName, muscles: [] }))
+      );
+      const musclesData = await Promise.all(musclePromises);
+      const musclesMap = {};
+      musclesData.forEach(item => {
+        musclesMap[item.exerciseName] = item.muscles;
+      });
+      setExerciseMuscles(musclesMap);
+      
+      const equipmentPromises = allExercises.map(ex => 
+        fetch(`http://localhost:8000/exercises/${ex.exerciseName}/equipment`)
+          .then(r => r.json())
+          .then(data => ({ exerciseName: ex.exerciseName, equipment: data.equipments }))
+          .catch(() => ({ exerciseName: ex.exerciseName, equipment: [] }))
+      );
+      const equipmentData = await Promise.all(equipmentPromises);
+      const equipmentMap = {};
+      equipmentData.forEach(item => {
+        equipmentMap[item.exerciseName] = item.equipment;
+      });
+      setExerciseEquipment(equipmentMap);
     } catch (err) {
       console.error('Error fetching exercises:', err);
     }
@@ -2228,26 +2256,63 @@ const Dashboard = () => {
             <div className="exercise-grid">
               {(exerciseFilter === 'all' ? exercises : 
                 exerciseFilter === 'lifting' ? liftingExercises : 
-                aerobicExercises).map((exercise, i) => (
-                <div key={i} className="exercise-card">
-                  <div className="exercise-card-header">
-                    <div className="exercise-icon">
-                      {exerciseFilter === 'aerobics' || aerobicExercises.some(e => e.exerciseName === exercise.exerciseName) ? (
-                        <Activity size={20} />
-                      ) : (
-                        <Dumbbell size={20} />
-                      )}
+                aerobicExercises).map((exercise, i) => {
+                const isAerobic = aerobicExercises.some(e => e.exerciseName === exercise.exerciseName);
+                const muscles = !isAerobic ? exerciseMuscles[exercise.exerciseName] || [] : [];
+                const equipment = exerciseEquipment[exercise.exerciseName] || [];
+                
+                return (
+                  <div key={i} className="exercise-card">
+                    <div className="exercise-card-header">
+                      <div className="exercise-icon">
+                        {isAerobic ? (
+                          <Activity size={20} />
+                        ) : (
+                          <Dumbbell size={20} />
+                        )}
+                      </div>
+                      <div className="exercise-badge">
+                        {isAerobic ? 'Aerobics' : 'Lifting'}
+                      </div>
                     </div>
-                    <div className="exercise-badge">
-                      {aerobicExercises.some(e => e.exerciseName === exercise.exerciseName) ? 'Aerobics' : 'Lifting'}
-                    </div>
+                    <h3 className="exercise-name">{exercise.exerciseName || exercise.exercise_name}</h3>
+                    <p className="exercise-description">
+                      {exercise.description || 'No description available'}
+                    </p>
+                    
+                    {equipment.length > 0 && (
+                      <div className="exercise-equipment">
+                        <div className="equipment-label">Equipment:</div>
+                        <div className="equipment-tags">
+                          {equipment.map((eq, idx) => (
+                            <span key={idx} className="equipment-tag" title={eq.description || eq.equipmentName}>
+                              {eq.equipmentName}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {muscles.length > 0 && (
+                      <div className="exercise-muscles">
+                        <div className="muscles-label">Target Muscles:</div>
+                        <div className="muscles-tags">
+                          {muscles.slice(0, 3).map((muscle, idx) => (
+                            <span key={idx} className="muscle-tag">
+                              {muscle.muscleName}
+                            </span>
+                          ))}
+                          {muscles.length > 3 && (
+                            <span className="muscle-tag muscle-tag-more">
+                              +{muscles.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <h3 className="exercise-name">{exercise.exerciseName || exercise.exercise_name}</h3>
-                  <p className="exercise-description">
-                    {exercise.description || 'No description available'}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             {(exerciseFilter === 'all' ? exercises : 
