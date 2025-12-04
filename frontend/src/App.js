@@ -1408,7 +1408,6 @@ const Dashboard = () => {
                   onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
                   placeholder="25.5"
-                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
               <div className="form-group">
@@ -1419,7 +1418,6 @@ const Dashboard = () => {
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
                   placeholder="30.0"
-                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
             </div>
@@ -1432,7 +1430,6 @@ const Dashboard = () => {
                 onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
                 placeholder="5.5"
-                style={{ MozAppearance: 'textfield' }}
               />
             </div>
 
@@ -1516,13 +1513,12 @@ const Dashboard = () => {
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <h3 className="modal-title" style={{ margin: 0 }}>Edit Food - {editingFood.foodName}</h3>
+          <div className="modal-title-row">
+            <h3 className="modal-title">Edit Food - {editingFood.foodName}</h3>
             <button
               onClick={handleDelete}
               className="btn-delete"
               title="Delete food"
-              style={{ marginLeft: '1rem' }}
             >
               <Trash2 size={16} />
             </button>
@@ -1562,7 +1558,6 @@ const Dashboard = () => {
                   onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
                   placeholder="25.5"
-                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
               <div className="form-group">
@@ -1573,7 +1568,6 @@ const Dashboard = () => {
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
                   placeholder="30.0"
-                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
             </div>
@@ -1586,7 +1580,6 @@ const Dashboard = () => {
                 onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
                 placeholder="5.5"
-                style={{ MozAppearance: 'textfield' }}
               />
             </div>
 
@@ -1812,14 +1805,12 @@ const Dashboard = () => {
         const oldTime = editingFoodLog.create_at.split('T')[1]?.substring(0, 8) || 
                         editingFoodLog.create_at.split(' ')[1]?.substring(0, 8) || '00:00:00';
         
-        // Delete old log
         await api.food.deleteUserFoodLog(
           currentUser.user_id, 
           editingFoodLog.foodName,
           `${oldCreateAt} ${oldTime}`
         );
         
-        // Create new log with updated values
         const newCreateAt = `${logDate} ${oldTime}`;
         await api.food.logFood(currentUser.user_id, editingFoodLog.foodName, quantity, newCreateAt);
         
@@ -1860,13 +1851,12 @@ const Dashboard = () => {
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-            <h3 className="modal-title" style={{ margin: 0 }}>Edit Food Log</h3>
+          <div className="modal-title-row">
+            <h3 className="modal-title">Edit Food Log</h3>
             <button
               onClick={handleDelete}
               className="btn-delete"
               title="Delete food log"
-              style={{ marginLeft: '1rem' }}
             >
               <Trash2 size={16} />
             </button>
@@ -2068,7 +2058,6 @@ const Dashboard = () => {
                 onChange={(e) => setFormData({...formData, distance: e.target.value})}
                 className="form-input"
                 placeholder="3.5"
-                style={{ MozAppearance: 'textfield' }}
               />
             </div>
           </div>
@@ -2305,7 +2294,7 @@ const Dashboard = () => {
                 return (
                   <div className="card card-spacing">
                     <h3 className="card-title">Today's Macro Distribution</h3>
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                    <div className="macro-chart-container">
                       <ResponsiveContainer width={300} height={300}>
                         <PieChart>
                           <Pie
@@ -2327,33 +2316,20 @@ const Dashboard = () => {
                         </PieChart>
                       </ResponsiveContainer>
                       
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div>
-                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                            Total Calories Today
-                          </div>
-                          <div style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827' }}>
-                            {Math.round(totalCalories)} cal
-                          </div>
+                      <div className="macro-stats-panel">
+                        <div className="macro-stats-total">
+                          <div className="macro-stats-label">Total Calories Today</div>
+                          <div className="macro-stats-value">{Math.round(totalCalories)} cal</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                            Total Macros
-                          </div>
-                          <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827' }}>
-                            {totalGrams.toFixed(1)}g
-                          </div>
+                          <div className="macro-stats-subtitle">Total Macros</div>
+                          <div className="macro-stats-secondary-value">{totalGrams.toFixed(1)}g</div>
                         </div>
-                        <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '0.5rem 0' }} />
+                        <div className="macro-divider" />
                         {macroData.map((macro, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ 
-                              width: '12px', 
-                              height: '12px', 
-                              backgroundColor: macro.color, 
-                              borderRadius: '2px' 
-                            }} />
-                            <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                          <div key={i} className="macro-stat-item">
+                            <div className="macro-color-dot" style={{ backgroundColor: macro.color }} />
+                            <span>
                               {macro.name}: {macro.value}g ({Math.round((macro.value / totalGrams) * 100)}%)
                             </span>
                           </div>
@@ -2373,14 +2349,13 @@ const Dashboard = () => {
             })()}
             
             <div className="card card-spacing">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 className="card-title" style={{ margin: 0 }}>Food Log</h3>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div className="food-log-header">
+                <h3 className="card-title">Food Log</h3>
+                <div className="date-range-controls">
                   <select 
                     value={foodLogDateRange}
                     onChange={(e) => setFoodLogDateRange(e.target.value)}
                     className="form-input"
-                    style={{ width: 'auto', padding: '0.5rem' }}
                   >
                     <option value="7days">Last 7 Days</option>
                     <option value="30days">Last 30 Days</option>
@@ -2392,13 +2367,12 @@ const Dashboard = () => {
               </div>
 
               {foodLogDateRange === 'custom' && (
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
+                <div className="custom-date-range">
                   <input
                     type="date"
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
                     className="form-input"
-                    style={{ width: 'auto' }}
                   />
                   <span>to</span>
                   <input
@@ -2406,7 +2380,6 @@ const Dashboard = () => {
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
                     className="form-input"
-                    style={{ width: 'auto' }}
                   />
                 </div>
               )}
@@ -2421,7 +2394,7 @@ const Dashboard = () => {
                 }
                 
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="food-log-days-container">
                     {dates.map((date, idx) => {
                       const foods = groupedFoods[date];
                       const totals = calculateDailyTotals(foods);
@@ -2438,13 +2411,11 @@ const Dashboard = () => {
                       }
                       
                       return (
-                        <div key={idx} className="card" style={{ marginBottom: 0 }}>
-                          <div style={{ marginBottom: '0.75rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', margin: 0 }}>
-                                {dateLabel}
-                              </h4>
-                              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        <div key={idx} className="card daily-food-card">
+                          <div className="daily-food-header">
+                            <div className="daily-food-title-row">
+                              <h4 className="daily-food-title">{dateLabel}</h4>
+                              <div className="daily-food-totals">
                                 {totals.calories} cal | C: {totals.carbs}g P: {totals.protein}g F: {totals.fat}g
                               </div>
                             </div>
@@ -2527,9 +2498,7 @@ const Dashboard = () => {
                       <span className="food-calories">{Math.round(food.calories || 0)} cal</span>
                     </div>
                     
-                    <p className="food-serving-text">
-                      per {food.servingSize || '100g'}
-                    </p>
+                    <p className="food-serving-text">per {food.servingSize || '100g'}</p>
                     
                     <div className="food-macros">
                       <div className="macro-detail">
@@ -2565,21 +2534,9 @@ const Dashboard = () => {
             {healthRecords.length > 0 && (
               <div className="card card-spacing">
                 <h3 className="card-title">Health Progress</h3>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
-                  gap: '2rem' 
-                }}>
-                  <div>
-                    <h4 style={{ 
-                      fontSize: '1rem', 
-                      fontWeight: '600', 
-                      color: '#111827', 
-                      marginBottom: '1rem',
-                      textAlign: 'center'
-                    }}>
-                      Weight Progress
-                    </h4>
+                <div className="health-charts-grid">
+                  <div className="chart-container">
+                    <h4 className="chart-title">Weight Progress</h4>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart 
                         data={healthRecords.slice().reverse()}
@@ -2621,16 +2578,8 @@ const Dashboard = () => {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                  <div>
-                    <h4 style={{ 
-                      fontSize: '1rem', 
-                      fontWeight: '600', 
-                      color: '#111827', 
-                      marginBottom: '1rem',
-                      textAlign: 'center'
-                    }}>
-                      Body Fat Progress
-                    </h4>
+                  <div className="chart-container">
+                    <h4 className="chart-title">Body Fat Progress</h4>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart 
                         data={healthRecords.slice().reverse()}
