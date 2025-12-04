@@ -43,11 +43,9 @@ class Exercise(BaseModel):
     description: Optional[str]
 
 
-class SessionExercise(BaseModel):
+class ExerciseSection(BaseModel):
     sessionId: int
     exerciseName: str
-    
-    model_config = {"populate_by_name": True}
 
 
 class Equipment(BaseModel):
@@ -72,4 +70,4 @@ class Set(BaseModel):
 
 class Metric(BaseModel):
     duration: Optional[str] = None
-    distance: Optional[float] = None
+    distance: Optional[str] = None

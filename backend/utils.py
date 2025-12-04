@@ -1,3 +1,4 @@
+import time
 import pymysql
 from typing import List
 from fastapi import HTTPException
@@ -28,11 +29,15 @@ def _call_proc(proc_name: str, params: tuple = ()):
         if "Duplicate entry" in msg:
             raise HTTPException(status_code=400, detail="Duplicate entry")
         if "CHECK constraint" in msg:
-            raise HTTPException(status_code=400, detail="Value violates CHECK constraint")
+            raise HTTPException(
+                status_code=400, detail="Value violates CHECK constraint"
+            )
         raise HTTPException(status_code=400, detail=f"Integrity error: {msg}")
 
     except pymysql.err.ProgrammingError as e:
-        raise HTTPException(status_code=500, detail=f"Database programming error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database programming error: {str(e)}"
+        )
 
     except pymysql.err.InternalError as e:
         sqlstate = e.args[0]
@@ -58,14 +63,29 @@ def fetch_user_by_id(userId: int) -> User:
 def insert_user(user: User):
     _call_proc(
         "sp_insert_user",
-        (user.first_name, user.last_name, user.email, user.password, user.age, user.gender),
+        (
+            user.first_name,
+            user.last_name,
+            user.email,
+            user.password,
+            user.age,
+            user.gender,
+        ),
     )
 
 
 def update_user(userId: int, user: User):
     _call_proc(
         "sp_update_user",
-        (userId, user.first_name, user.last_name, user.email, user.password, user.age, user.gender),
+        (
+            userId,
+            user.first_name,
+            user.last_name,
+            user.email,
+            user.password,
+            user.age,
+            user.gender,
+        ),
     )
 
 
@@ -81,7 +101,7 @@ def fetch_all_foods() -> List[Food]:
             calories=row.get("calories"),
             carbohydrate=row["carbohydrate"],
             protein=row["protein"],
-            fat=row["fat"]
+            fat=row["fat"],
         )
         for row in rows
     ]
@@ -95,7 +115,7 @@ def fetch_food(foodName: str) -> Food:
         calories=row.get("calories"),
         carbohydrate=row["carbohydrate"],
         protein=row["protein"],
-        fat=row["fat"]
+        fat=row["fat"],
     )
 
 
@@ -108,7 +128,7 @@ def fetch_foods_by_user_id(userId: int) -> List[Food]:
             "carbohydrate": row["carbohydrate"],
             "protein": row["protein"],
             "fat": row["fat"],
-            "create_at": row.get("create_at")
+            "create_at": row.get("create_at"),
         }
         for row in rows
     ]
@@ -116,8 +136,7 @@ def fetch_foods_by_user_id(userId: int) -> List[Food]:
 
 def insert_food(food: Food):
     _call_proc(
-        "sp_insert_food", 
-        (food.foodName, food.carbohydrate, food.protein, food.fat)
+        "sp_insert_food", (food.foodName, food.carbohydrate, food.protein, food.fat)
     )
 
 
@@ -129,10 +148,7 @@ def insert_user_food_log(userFoodLog: UserFoodLog):
 
 
 def update_food(foodName: str, food: Food):
-    _call_proc(
-        "sp_update_food", 
-        (foodName, food.carbohydrate, food.protein, food.fat)
-    )
+    _call_proc("sp_update_food", (foodName, food.carbohydrate, food.protein, food.fat))
 
 
 def delete_food(foodName: str):
@@ -145,7 +161,7 @@ def fetch_health_conditions_by_user_id(userId: int) -> List[dict]:
         {
             "createdAt": str(row["create_at"]),
             "weight": float(row["weight"]),
-            "body_fat_percent": float(row["body_fat_percent"])
+            "body_fat_percent": float(row["body_fat_percent"]),
         }
         for row in rows
     ]
@@ -154,7 +170,12 @@ def fetch_health_conditions_by_user_id(userId: int) -> List[dict]:
 def insert_user_health_condition(userId: int, healthCondition: HealthCondition):
     _call_proc(
         "sp_insert_user_health_condition",
-        (userId, healthCondition.createdAt, healthCondition.weight, healthCondition.body_fat_percent),
+        (
+            userId,
+            healthCondition.createdAt,
+            healthCondition.weight,
+            healthCondition.body_fat_percent,
+        ),
     )
 
 
@@ -168,8 +189,8 @@ def fetch_sessions_by_user_id(userId: int) -> List[dict]:
         {
             "session_id": row["session_id"],
             "startTime": str(row["start_time"]),
-            "endTime": str(row["end_time"]), 
-            "note": row["note"]
+            "endTime": str(row["end_time"]),
+            "note": row["note"],
         }
         for row in rows
     ]
@@ -177,8 +198,7 @@ def fetch_sessions_by_user_id(userId: int) -> List[dict]:
 
 def insert_session(userId: int, session: Session):
     _call_proc(
-        "sp_insert_session", 
-        (userId, session.startTime, session.endTime, session.note)
+        "sp_insert_session", (userId, session.startTime, session.endTime, session.note)
     )
 
 
@@ -193,29 +213,43 @@ def delete_session(userId: int, sessionId: int):
     _call_proc("sp_delete_session", (userId, sessionId))
 
 
-def insert_session_exercise(sessionExercise: SessionExercise):
+"""Mike's update part1 start"""
+
+
+def insert_lifting_section(liftingSection: ExerciseSection):
     _call_proc(
-        "sp_insert_session_exercise",
-        (sessionExercise.sessionId, sessionExercise.exerciseName),
+        "sp_insert_lifting_section",
+        (liftingSection.sessionId, liftingSection.exerciseName),
     )
 
 
-def delete_session_exercise(sessionId: int, exerciseName: str):
-    _call_proc("sp_delete_session_exercise", (sessionId, exerciseName))
+def insert_aerobics_section(aerobicsSection: ExerciseSection):
+    _call_proc(
+        "sp_insert_aerobics_section",
+        (aerobicsSection.sessionId, aerobicsSection.exerciseName),
+    )
 
 
-def fetch_exercises_by_session_id(sessionId: int) -> List[str]:
-    rows = _call_proc("sp_fetch_exercises_by_session_id", (sessionId,))
+def delete_lifting_section(sectionId: int):
+    _call_proc("sp_delete_lifting_section", (sectionId,))
+
+
+def delete_aerobics_section(sectionId: int):
+    _call_proc("sp_delete_aerobics_section", (sectionId,))
+
+
+def fetch_exercise_section_by_session_id(sessionId: int) -> List[str]:
+    rows = _call_proc("sp_fetch_exercise_section_by_session_id", (sessionId,))
     return [row["exercise_name"] for row in rows]
+
+
+"""Mike's update part1 end"""
 
 
 def fetch_exercises() -> List[dict]:
     rows = _call_proc("sp_fetch_exercises")
     return [
-        {
-            "exerciseName": row["exercise_name"],
-            "description": row.get("description")
-        }
+        {"exerciseName": row["exercise_name"], "description": row.get("description")}
         for row in rows
     ]
 
@@ -224,7 +258,7 @@ def fetch_exercise_by_name(exerciseName: str) -> dict:
     rows = _call_proc("sp_fetch_exercise_by_name", (exerciseName,))
     return {
         "exerciseName": rows[0]["exercise_name"],
-        "description": rows[0].get("description")
+        "description": rows[0].get("description"),
     }
 
 
@@ -236,10 +270,7 @@ def fetch_equipments_by_exercise_name(exerciseName: str) -> List[Equipment]:
 def fetch_exercise_by_equipment_name(equipmentName: str) -> List[dict]:
     rows = _call_proc("sp_fetch_exercise_by_equipment_name", (equipmentName,))
     return [
-        {
-            "exerciseName": row["exercise_name"],
-            "description": row.get("description")
-        }
+        {"exerciseName": row["exercise_name"], "description": row.get("description")}
         for row in rows
     ]
 
@@ -247,12 +278,10 @@ def fetch_exercise_by_equipment_name(equipmentName: str) -> List[dict]:
 def fetch_aerobics() -> List[dict]:
     rows = _call_proc("sp_fetch_aerobics")
     return [
-        {
-            "exerciseName": row["exercise_name"],
-            "description": row.get("description")
-        }
+        {"exerciseName": row["exercise_name"], "description": row.get("description")}
         for row in rows
     ]
+
 
 def fetch_aerobics_by_name(aerobicsName: str) -> dict:
     rows = _call_proc("sp_fetch_aerobics_by_name", (aerobicsName,))
@@ -260,35 +289,41 @@ def fetch_aerobics_by_name(aerobicsName: str) -> dict:
         raise HTTPException(status_code=404, detail="Aerobics exercise not found")
     return {
         "exerciseName": rows[0].get("exercise_name", ""),
-        "description": rows[0].get("description", "")
+        "description": rows[0].get("description", ""),
     }
 
-def insert_aerobics_metric(sessionId: int, aerobicsName: str, metric: Metric):
+
+"""Mike's update part2 start"""
+
+
+def insert_aerobics_section_metric(sectionId: int, metric: Metric):
     _call_proc(
-        "sp_insert_aerobics_metric",
-        (sessionId, aerobicsName, metric.duration, metric.distance),
-    )
-
-def fetch_metrics(aerobicsName: str, sessionId: int) -> List[dict]:
-    rows = _call_proc("sp_fetch_metrics", (aerobicsName, sessionId))
-    return [
-        {
-            "duration": str(row["duration"]) if row.get("duration") else None,
-            "distance": float(row["distance"]) if row.get("distance") else None
-        }
-        for row in rows
-    ]
-
-
-def update_aerobics_metric(sessionId: int, aerobicsName: str, metric: Metric):
-    _call_proc(
-        "sp_update_aerobics_metric",
-        (sessionId, aerobicsName, metric.duration, metric.distance),
+        "sp_insert_aerobics_section_metric",
+        (sectionId, metric.duration, metric.distance),
     )
 
 
-def delete_aerobics_metric(sessionId: int, aerobicsName: str):
-    _call_proc("sp_delete_aerobics_metric", (sessionId, aerobicsName))
+def fetch_aerobics_section_metric(sectionId: int) -> List[Metric]:
+    rows = _call_proc("sp_fetch_aerobics_section_metric", (sectionId,))
+    result = []
+
+    for row in rows:
+        if isinstance(row.get("duration"), time):
+            row["duration"] = row["duration"].strftime("%H:%M:%S")
+
+        result.append(Metric(duration=row["duration"], distance=row["distance"]))
+    return result
+
+
+def update_aerobics_section_metric(metricId: int, metric: Metric):
+    _call_proc(
+        "sp_update_aerobics_section_metric",
+        (metricId, metric.duration, metric.distance),
+    )
+
+
+def delete_aerobics_section_metric(metricId: int):
+    _call_proc("sp_delete_aerobics_section_metric", (metricId,))
 
 
 def fetch_liftings() -> List[dict]:
@@ -296,10 +331,11 @@ def fetch_liftings() -> List[dict]:
     return [
         {
             "exerciseName": row.get("exercise_name", ""),
-            "description": row.get("description", "")
+            "description": row.get("description", ""),
         }
         for row in rows
     ]
+
 
 def fetch_lifting_by_name(liftingName: str) -> dict:
     rows = _call_proc("sp_fetch_lifting_by_name", (liftingName,))
@@ -307,34 +343,33 @@ def fetch_lifting_by_name(liftingName: str) -> dict:
         raise HTTPException(status_code=404, detail="Lifting exercise not found")
     return {
         "exerciseName": rows[0].get("exercise_name", ""),
-        "description": rows[0].get("description", "")
+        "description": rows[0].get("description", ""),
     }
 
 
-def insert_lifting_set(sessionId: int, liftingName: str, set: Set):
+def insert_lifting_section_set(sectionId: int, set: Set):
     _call_proc(
-        "sp_insert_lifting_set",
-        (sessionId, liftingName, set.setNum, set.weight, set.reps),
+        "sp_insert_lifting_section_set",
+        (sectionId, set.setNum, set.weight, set.reps),
     )
 
 
-def fetch_sets(liftingName: str, sessionId: int) -> List[Set]:
-    rows = _call_proc("sp_fetch_sets", (liftingName, sessionId))
+def fetch_lifting_section_sets(sectionId: int) -> List[Set]:
+    rows = _call_proc("sp_fetch_lifting_section_sets", (sectionId,))
     return [
         Set(setNum=row["set_num"], weight=row["weight"], reps=row["reps"])
         for row in rows
     ]
 
 
-def update_lifting_set(sessionId: int, liftingName: str, setNum: int, set: Set):
+def update_lifting_section_set(sectionId: int, setNum: int, set: Set):
     _call_proc(
-        "sp_update_lifting_set", 
-        (sessionId, liftingName, setNum, set.weight, set.reps)
+        "sp_update_lifting_section_set", (sectionId, setNum, set.weight, set.reps)
     )
 
 
-def delete_lifting_set(sessionId: int, liftingName: str, setNum: int):
-    _call_proc("sp_delete_lifting_set", (sessionId, liftingName, setNum))
+def delete_lifting_section_set(sectionId: int, setNum: int):
+    _call_proc("sp_delete_lifting_section_set", (sectionId, setNum))
 
 
 def fetch_muscles_by_lifting_name(liftingName: str) -> List[Muscle]:
@@ -345,10 +380,7 @@ def fetch_muscles_by_lifting_name(liftingName: str) -> List[Muscle]:
 def fetch_liftings_by_muscle_name(muscleName: str) -> List[dict]:
     rows = _call_proc("sp_fetch_liftings_by_muscle_name", (muscleName,))
     return [
-        {
-            "exerciseName": row["exercise_name"],
-            "description": row.get("description")
-        }
+        {"exerciseName": row["exercise_name"], "description": row.get("description")}
         for row in rows
     ]
 
