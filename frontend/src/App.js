@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Dumbbell, Activity, Apple, Heart, Plus, ChevronRight, TrendingUp, Clock, Trash2, User, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, Dumbbell, Activity, Apple, Heart, Plus, Minus, ChevronRight, TrendingUp, Clock, Trash2, User, LogOut } from 'lucide-react';
 import './App.css';
 import api from './api';
 
@@ -166,7 +166,7 @@ const LoginRegister = ({ onLogin }) => {
 
           {error && <div className="error">{error}</div>}
 
-          <button type="submit" className="btn-primary" disabled={loading} style={{width: '100%', justifyContent: 'center'}}>
+          <button type="submit" className="btn-primary btn-full-width" disabled={loading}>
             {loading ? 'Loading...' : isLogin ? 'Login' : 'Register'}
           </button>
         </form>
@@ -207,9 +207,10 @@ const Dashboard = () => {
   const [userFoods, setUserFoods] = useState([]);
   const [showNewFood, setShowNewFood] = useState(false);
   const [showLogFood, setShowLogFood] = useState(false);
+  const [showEditFood, setShowEditFood] = useState(false);
+  const [editingFood, setEditingFood] = useState(null);
   const [selectedSession, setSelectedSession] = useState(null);
   const [showAddExercise, setShowAddExercise] = useState(false);
-  const [sessionExercises, setSessionExercises] = useState([]);
   const [showAddSet, setShowAddSet] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -219,26 +220,6 @@ const Dashboard = () => {
   const [editingSession, setEditingSession] = useState(null);
   const [showAddAerobicMetric, setShowAddAerobicMetric] = useState(false);
   const [selectedAerobicExercise, setSelectedAerobicExercise] = useState(null);
-  
-  const isFetchingRef = useRef(false);
-
-  const fetchSessionExercises = useCallback(async (sessionId) => {
-    if (isFetchingRef.current) return;
-    
-    isFetchingRef.current = true;
-    try {
-      const exerciseNames = await api.session.getSessionExercises(sessionId);
-      const exerciseDetails = exerciseNames.map(name => ({
-        exerciseName: name
-      }));
-      setSessionExercises(exerciseDetails);
-    } catch (err) {
-      console.error('Error fetching session exercises:', err);
-      setSessionExercises([]);
-    } finally {
-      isFetchingRef.current = false;
-    }
-  }, []);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('workout_tracker_user');
@@ -265,9 +246,7 @@ const Dashboard = () => {
   }, [isAuthenticated, currentUser.user_id]);
 
   const fetchFoods = async () => {
-    if (!currentUser.user_id) {
-      return;
-    }
+    if (!currentUser.user_id) return;
     
     try {
       const [allFoods, userFoodLogs] = await Promise.all([
@@ -314,9 +293,7 @@ const Dashboard = () => {
   };
 
   const fetchAllData = async () => {
-    if (!currentUser.user_id) {
-      return;
-    }
+    if (!currentUser.user_id) return;
 
     try {
       setLoading(true);
@@ -399,15 +376,14 @@ const Dashboard = () => {
           </div>
           <p className="session-note">{session.note || "No notes"}</p>
         </div>
-        <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+        <div className="session-actions">
           <button
             onClick={(e) => {
               e.stopPropagation();
               setEditingSession(session);
               setShowEditSession(true);
             }}
-            className="btn-secondary"
-            style={{padding: '0.5rem'}}
+            className="btn-secondary btn-icon-only"
             title="Edit session"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -675,16 +651,11 @@ const Dashboard = () => {
       }
 
       try {
-        console.log('Sending:', {
-          sessionId: selectedSession.session_id,
-          exerciseName: selectedExerciseName
-        });
         await api.session.addExerciseToSession(selectedSession.session_id, selectedExerciseName);
         setShowAddExercise(false);
         setExerciseRefreshKey(prev => prev + 1);
         alert('Exercise added to session!');
       } catch (err) {
-        console.error('Full error:', err);
         alert('Error adding exercise: ' + (err.message || 'Unknown error'));
       }
     };
@@ -989,7 +960,7 @@ const Dashboard = () => {
           <button onClick={() => {
             setSelectedSession(null);
             setActiveTab('sessions');
-          }} className="btn-secondary" style={{padding: '0.5rem 1rem'}}>
+          }} className="btn-secondary btn-back">
             ← Back to Sessions
           </button>
           <button onClick={() => setShowAddExercise(true)} className="btn-primary">
@@ -1048,7 +1019,6 @@ const Dashboard = () => {
                           }}
                           className="btn-delete"
                           title="Remove from session"
-                          style={{marginRight: '0.5rem'}}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1125,7 +1095,7 @@ const Dashboard = () => {
                                 </div>
                               ))
                             ) : (
-                              <p className="no-data" style={{marginTop: '1rem'}}>No sets added yet</p>
+                              <p className="no-data no-data-compact">No sets added yet</p>
                             )}
                           </div>
                         )}
@@ -1253,10 +1223,18 @@ const Dashboard = () => {
   const NewFoodForm = () => {
     const [formData, setFormData] = useState({
       foodName: '',
+      servingSize: '100g',
       carbohydrate: '',
       protein: '',
       fat: ''
     });
+
+    const calculateCalories = () => {
+      const carbs = parseFloat(formData.carbohydrate) || 0;
+      const protein = parseFloat(formData.protein) || 0;
+      const fat = parseFloat(formData.fat) || 0;
+      return Math.round(carbs * 4 + protein * 4 + fat * 9);
+    };
 
     const handleSubmit = async () => {
       if (!formData.foodName || !formData.carbohydrate || !formData.protein || !formData.fat) {
@@ -1267,6 +1245,7 @@ const Dashboard = () => {
       try {
         await api.food.createFood({
           foodName: formData.foodName,
+          servingSize: formData.servingSize || '100g',
           carbohydrate: parseFloat(formData.carbohydrate),
           protein: parseFloat(formData.protein),
           fat: parseFloat(formData.fat)
@@ -1295,11 +1274,27 @@ const Dashboard = () => {
                 placeholder="e.g., Chicken Breast"
               />
             </div>
+            
+            <div className="form-group">
+              <label className="form-label">Serving Size</label>
+              <input 
+                type="text" 
+                value={formData.servingSize}
+                onChange={(e) => setFormData({...formData, servingSize: e.target.value})}
+                className="form-input"
+                placeholder="100g"
+              />
+              <p className="form-hint">
+                All macros should be per this serving size (we recommend 100g)
+              </p>
+            </div>
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Carbs (g)</label>
                 <input 
-                  type="text" 
+                  type="number"
+                  step="0.1"
                   value={formData.carbohydrate}
                   onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
@@ -1309,7 +1304,8 @@ const Dashboard = () => {
               <div className="form-group">
                 <label className="form-label">Protein (g)</label>
                 <input 
-                  type="text"
+                  type="number"
+                  step="0.1"
                   value={formData.protein}
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
@@ -1317,16 +1313,26 @@ const Dashboard = () => {
                 />
               </div>
             </div>
+            
             <div className="form-group">
               <label className="form-label">Fat (g)</label>
               <input 
-                type="text"
+                type="number"
+                step="0.1"
                 value={formData.fat}
                 onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
                 placeholder="5.5"
               />
             </div>
+
+            {(formData.carbohydrate || formData.protein || formData.fat) && (
+              <div className="calorie-preview">
+                <p className="calorie-preview-text">
+                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize}
+                </p>
+              </div>
+            )}
           </div>
           
           <div className="modal-buttons">
@@ -1342,8 +1348,155 @@ const Dashboard = () => {
     );
   };
 
+  const EditFoodForm = () => {
+    const [formData, setFormData] = useState({
+      foodName: editingFood.foodName,
+      servingSize: editingFood.servingSize || '100g',
+      carbohydrate: editingFood.carbohydrate,
+      protein: editingFood.protein,
+      fat: editingFood.fat
+    });
+
+    const calculateCalories = () => {
+      const carbs = parseFloat(formData.carbohydrate) || 0;
+      const protein = parseFloat(formData.protein) || 0;
+      const fat = parseFloat(formData.fat) || 0;
+      return Math.round(carbs * 4 + protein * 4 + fat * 9);
+    };
+
+    const handleSubmit = async () => {
+      if (!formData.carbohydrate || !formData.protein || !formData.fat) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      try {
+        await api.food.updateFood(editingFood.foodName, {
+          servingSize: formData.servingSize || '100g',
+          carbohydrate: parseFloat(formData.carbohydrate),
+          protein: parseFloat(formData.protein),
+          fat: parseFloat(formData.fat)
+        });
+
+        setShowEditFood(false);
+        setEditingFood(null);
+        fetchFoods();
+        alert('Food updated successfully!');
+      } catch (err) {
+        alert('Error updating food: ' + err.message);
+      }
+    };
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3 className="modal-title">Edit Food - {editingFood.foodName}</h3>
+          
+          <div className="form-container">
+            <div className="form-group">
+              <label className="form-label">Food Name</label>
+              <input 
+                type="text" 
+                value={formData.foodName}
+                className="form-input food-name-disabled"
+                disabled
+              />
+              <p className="form-hint">
+                Food name cannot be changed
+              </p>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Serving Size</label>
+              <input 
+                type="text" 
+                value={formData.servingSize}
+                onChange={(e) => setFormData({...formData, servingSize: e.target.value})}
+                className="form-input"
+                placeholder="100g"
+              />
+              <p className="form-hint">
+                All macros should be per this serving size
+              </p>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Carbs (g)</label>
+                <input 
+                  type="number"
+                  step="0.1"
+                  value={formData.carbohydrate}
+                  onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
+                  className="form-input"
+                  placeholder="25.5"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Protein (g)</label>
+                <input 
+                  type="number"
+                  step="0.1"
+                  value={formData.protein}
+                  onChange={(e) => setFormData({...formData, protein: e.target.value})}
+                  className="form-input"
+                  placeholder="30.0"
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Fat (g)</label>
+              <input 
+                type="number"
+                step="0.1"
+                value={formData.fat}
+                onChange={(e) => setFormData({...formData, fat: e.target.value})}
+                className="form-input"
+                placeholder="5.5"
+              />
+            </div>
+
+            {(formData.carbohydrate || formData.protein || formData.fat) && (
+              <div className="calorie-preview">
+                <p className="calorie-preview-text">
+                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <div className="modal-buttons">
+            <button onClick={() => {
+              setShowEditFood(false);
+              setEditingFood(null);
+            }} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleSubmit} className="btn-primary">
+              Update Food
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const LogFoodForm = () => {
     const [selectedFood, setSelectedFood] = useState('');
+    const [quantity, setQuantity] = useState(1);
+
+    const adjustQuantity = (delta) => {
+      setQuantity(prev => Math.max(0.1, Number((prev + delta).toFixed(1))));
+    };
+
+    const getSelectedFoodData = () => {
+      return foods.find(f => f.foodName === selectedFood);
+    };
+
+    const calculateTotal = (value) => {
+      return Math.round(value * quantity * 10) / 10;
+    };
 
     const handleSubmit = async () => {
       if (!selectedFood) {
@@ -1351,9 +1504,16 @@ const Dashboard = () => {
         return;
       }
 
+      if (quantity <= 0) {
+        alert('Quantity must be greater than 0');
+        return;
+      }
+
       try {
-        await api.food.logFood(currentUser.user_id, selectedFood);
+        await api.food.logFood(currentUser.user_id, selectedFood, quantity);
         setShowLogFood(false);
+        setSelectedFood('');
+        setQuantity(1);
         fetchFoods();
       } catch (err) {
         alert('Error logging food: ' + err.message);
@@ -1370,53 +1530,98 @@ const Dashboard = () => {
               <label className="form-label">Select Food</label>
               <select 
                 value={selectedFood}
-                onChange={(e) => setSelectedFood(e.target.value)}
+                onChange={(e) => {
+                  setSelectedFood(e.target.value);
+                  setQuantity(1);
+                }}
                 className="form-input"
               >
                 <option value="">Choose a food...</option>
                 {foods.map((food, i) => (
                   <option key={i} value={food.foodName}>
-                    {food.foodName} - {food.calories ? Math.round(food.calories) : 0} cal
+                    {food.foodName} - {food.servingSize || '100g'} ({Math.round(food.calories || 0)} cal)
                   </option>
                 ))}
               </select>
             </div>
 
-            {selectedFood && foods.find(f => f.foodName === selectedFood) && (
-              <div className="food-preview">
-                <h4>Nutritional Info:</h4>
-                <div className="macro-grid">
-                  <div className="macro-item">
-                    <span className="macro-label">Calories</span>
-                    <span className="macro-value">
-                      {Math.round(foods.find(f => f.foodName === selectedFood).calories || 0)}
-                    </span>
+            {selectedFood && getSelectedFoodData() && (
+              <>
+                <div className="form-group">
+                  <label className="form-label">
+                    Quantity (servings of {getSelectedFoodData().servingSize || '100g'})
+                  </label>
+                  <div className="quantity-controls">
+                    <button
+                      type="button"
+                      onClick={() => adjustQuantity(-0.5)}
+                      className="btn-secondary quantity-btn"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                      className="form-input quantity-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => adjustQuantity(0.5)}
+                      className="btn-secondary quantity-btn"
+                    >
+                      <Plus size={16} />
+                    </button>
                   </div>
-                  <div className="macro-item">
-                    <span className="macro-label">Carbs</span>
-                    <span className="macro-value">
-                      {foods.find(f => f.foodName === selectedFood).carbohydrate}g
-                    </span>
-                  </div>
-                  <div className="macro-item">
-                    <span className="macro-label">Protein</span>
-                    <span className="macro-value">
-                      {foods.find(f => f.foodName === selectedFood).protein}g
-                    </span>
-                  </div>
-                  <div className="macro-item">
-                    <span className="macro-label">Fat</span>
-                    <span className="macro-value">
-                      {foods.find(f => f.foodName === selectedFood).fat}g
-                    </span>
-                  </div>
+                  <p className="quantity-hint">
+                    = {(quantity * (getSelectedFoodData().servingSize === '100g' ? 100 : 1)).toFixed(0)}g total
+                  </p>
                 </div>
-              </div>
+
+                <div className="food-preview">
+                  <h4>Total Nutritional Info:</h4>
+                  <div className="macro-grid">
+                    <div className="macro-item">
+                      <span className="macro-label">Calories</span>
+                      <span className="macro-value">
+                        {calculateTotal(getSelectedFoodData().calories)}
+                      </span>
+                    </div>
+                    <div className="macro-item">
+                      <span className="macro-label">Carbs</span>
+                      <span className="macro-value">
+                        {calculateTotal(getSelectedFoodData().carbohydrate)}g
+                      </span>
+                    </div>
+                    <div className="macro-item">
+                      <span className="macro-label">Protein</span>
+                      <span className="macro-value">
+                        {calculateTotal(getSelectedFoodData().protein)}g
+                      </span>
+                    </div>
+                    <div className="macro-item">
+                      <span className="macro-label">Fat</span>
+                      <span className="macro-value">
+                        {calculateTotal(getSelectedFoodData().fat)}g
+                      </span>
+                    </div>
+                  </div>
+                  <p className="quantity-summary">
+                    {quantity} × {getSelectedFoodData().servingSize || '100g'} serving
+                  </p>
+                </div>
+              </>
             )}
           </div>
           
           <div className="modal-buttons">
-            <button onClick={() => setShowLogFood(false)} className="btn-secondary">
+            <button onClick={() => {
+              setShowLogFood(false);
+              setSelectedFood('');
+              setQuantity(1);
+            }} className="btn-secondary">
               Cancel
             </button>
             <button onClick={handleSubmit} className="btn-primary">
@@ -1433,7 +1638,31 @@ const Dashboard = () => {
       duration: '',
       distance: ''
     });
+    const [existingMetrics, setExistingMetrics] = useState(null);
 
+    useEffect(() => {
+      const fetchExisting = async () => {
+        if (selectedAerobicExercise) {
+          try {
+            const metrics = await api.aerobic.getMetrics(
+              selectedAerobicExercise.exerciseName,
+              selectedSession.session_id
+            );
+            if (metrics.length > 0) {
+              setExistingMetrics(metrics[0]);
+              setFormData({
+                duration: metrics[0].duration || '',
+                distance: metrics[0].distance || ''
+              });
+            }
+          } catch (err) {
+            console.error('Error fetching existing metrics:', err);
+          }
+        }
+      };
+      fetchExisting();
+    }, [selectedAerobicExercise]);
+    
     const handleSubmit = async () => {
       if (!formData.duration && !formData.distance) {
         alert('Please fill in at least one field (duration or distance)');
@@ -1441,30 +1670,43 @@ const Dashboard = () => {
       }
 
       try {
-        await api.aerobic.addMetric(
-          selectedAerobicExercise.exerciseName,
-          selectedSession.session_id,
-          {
-            duration: formData.duration || null,
-            distance: formData.distance ? parseFloat(formData.distance) : null
-          }
-        );
+        if (existingMetrics) {
+          await api.aerobic.updateMetric(
+            selectedAerobicExercise.exerciseName,
+            selectedSession.session_id,
+            {
+              duration: formData.duration || null,
+              distance: formData.distance ? parseFloat(formData.distance) : null
+            }
+          );
+        } else {
+          await api.aerobic.addMetric(
+            selectedAerobicExercise.exerciseName,
+            selectedSession.session_id,
+            {
+              duration: formData.duration || null,
+              distance: formData.distance ? parseFloat(formData.distance) : null
+            }
+          );
+        }
         setShowAddAerobicMetric(false);
         setExerciseRefreshKey(prev => prev + 1);
-        alert('Metrics added successfully!');
+        alert('Metrics saved successfully!');
       } catch (err) {
-        alert('Error adding metrics: ' + err.message);
+        alert('Error saving metrics: ' + err.message);
       }
     };
 
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <h3 className="modal-title">Add Metrics - {selectedAerobicExercise?.exerciseName}</h3>
+          <h3 className="modal-title">
+            {existingMetrics ? 'Edit' : 'Add'} Metrics - {selectedAerobicExercise?.exerciseName}
+          </h3>
           
           <div className="form-container">
             <div className="form-group">
-              <label className="form-label">Duration (HH:MM:SS)l</label>
+              <label className="form-label">Duration (HH:MM:SS)</label>
               <input 
                 type="text" 
                 value={formData.duration}
@@ -1492,7 +1734,7 @@ const Dashboard = () => {
               Cancel
             </button>
             <button onClick={handleSubmit} className="btn-primary">
-              Add Metrics
+              {existingMetrics ? 'Update' : 'Add'} Metrics
             </button>
           </div>
         </div>
@@ -1508,7 +1750,7 @@ const Dashboard = () => {
             <h1 className="header-title">Workout Tracker</h1>
             <p className="header-subtitle">Welcome back, {currentUser.first_name}!</p>
           </div>
-          <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
+          <div className="header-actions">
             <div className="user-info">
               <User size={20} />
               <span>{currentUser.email}</span>
@@ -1517,7 +1759,7 @@ const Dashboard = () => {
               <Plus className="btn-icon" />
               New Session
             </button>
-            <button onClick={handleLogout} className="btn-secondary" style={{padding: '0.5rem 1rem'}}>
+            <button onClick={handleLogout} className="btn-secondary btn-logout">
               <LogOut size={20} />
             </button>
           </div>
@@ -1699,24 +1941,39 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="card" style={{marginBottom: '1.5rem'}}>
+            <div className="card card-spacing">
               <h3 className="card-title">Recent Food Log</h3>
               <div className="food-log-list">
                 {userFoods.length > 0 ? (
-                  userFoods.slice(0, 10).map((food, i) => (
-                    <div key={i} className="food-log-item">
-                      <div>
-                        <div className="food-log-name">{food.foodName || food.food_name}</div>
-                        <div className="food-log-date">{formatDateTime(food.create_at)}</div>
+                  userFoods.slice(0, 10).map((food, i) => {
+                    const qty = food.quantity || 1;
+                    const totalCals = Math.round((food.calories || 0) * qty);
+                    const totalCarbs = Math.round((food.carbohydrate || 0) * qty * 10) / 10;
+                    const totalProtein = Math.round((food.protein || 0) * qty * 10) / 10;
+                    const totalFat = Math.round((food.fat || 0) * qty * 10) / 10;
+                    
+                    return (
+                      <div key={i} className="food-log-item">
+                        <div>
+                          <div className="food-log-name">
+                            {food.foodName || food.food_name}
+                            {qty !== 1 && (
+                              <span className="food-quantity-badge">
+                                ({qty} × {food.servingSize || '100g'})
+                              </span>
+                            )}
+                          </div>
+                          <div className="food-log-date">{formatDateTime(food.create_at)}</div>
+                        </div>
+                        <div className="food-log-macros">
+                          <span className="macro-badge">{totalCals} cal</span>
+                          <span className="macro-badge">C: {totalCarbs}g</span>
+                          <span className="macro-badge">P: {totalProtein}g</span>
+                          <span className="macro-badge">F: {totalFat}g</span>
+                        </div>
                       </div>
-                      <div className="food-log-macros">
-                        <span className="macro-badge">{Math.round(food.calories || 0)} cal</span>
-                        <span className="macro-badge">C: {food.carbohydrate}g</span>
-                        <span className="macro-badge">P: {food.protein}g</span>
-                        <span className="macro-badge">F: {food.fat}g</span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="no-data">No food logged yet</p>
                 )}
@@ -1727,12 +1984,30 @@ const Dashboard = () => {
               <h3 className="card-title">Food Database ({foods.length} foods)</h3>
               <div className="food-grid">
                 {foods.map((food, i) => (
-                  <div key={i} className="food-card">
+                  <div key={i} className="food-card food-card-relative">
+                    <button
+                      onClick={() => {
+                        setEditingFood(food);
+                        setShowEditFood(true);
+                      }}
+                      className="food-edit-btn"
+                      title="Edit food"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
+                    
                     <div className="food-card-header">
-                      <Apple size={20} className="food-icon" />
+                      <h4 className="food-name food-name-no-margin">{food.foodName}</h4>
                       <span className="food-calories">{Math.round(food.calories || 0)} cal</span>
                     </div>
-                    <h4 className="food-name">{food.foodName}</h4>
+                    
+                    <p className="food-serving-text">
+                      per {food.servingSize || '100g'}
+                    </p>
+                    
                     <div className="food-macros">
                       <div className="macro-detail">
                         <span className="macro-label">Carbs</span>
@@ -1799,6 +2074,7 @@ const Dashboard = () => {
       {showEditSession && editingSession && <EditSessionForm />}
       {showNewHealth && <NewHealthRecordForm />}
       {showNewFood && <NewFoodForm />}
+      {showEditFood && editingFood && <EditFoodForm />}
       {showLogFood && <LogFoodForm />}
       {showAddExercise && <AddExerciseToSessionForm />}
       {showAddSet && <AddSetForm />}

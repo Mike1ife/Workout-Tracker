@@ -18,7 +18,6 @@ async def root():
     return {"message": "hello world"}
 
 
-# User
 @app.get("/users", tags=["User"])
 async def get_all_users():
     return {"all_users": fetch_all_users()}
@@ -47,7 +46,6 @@ async def delete_user_by_id(userId: int):
     return {"message": "Delete user successfully"}
 
 
-# Food
 @app.get("/foods", tags=["Food"])
 async def get_all_foods():
     return {"all_foods": fetch_all_foods()}
@@ -87,7 +85,6 @@ async def delete_food_by_name(foodName: str):
     return {"message": "Delete food successfully"}
 
 
-# Health Condition
 @app.get("/health/{userId}", tags=["Health"])
 async def get_health_conditions_by_user_id(userId: int):
     return {"user_health_conditions": fetch_health_conditions_by_user_id(userId=userId)}
@@ -105,54 +102,37 @@ async def delete_health_condition(userId: int, createdAt: str):
     return {"message": "Delete health condition successfully"}
 
 
-# Session
-@app.get("/sessions/{userId}", tags=["Session"])
-async def get_user_sessions(userId: int):
-    return {"sessions": fetch_sessions_by_user_id(userId=userId)}
-
-
-"""Mike's update part1 start"""
-
-
-# User first select add lifting or aerobics in a session
-# Then select exercise name
-
-
-# Update: Add lifting to session
-@app.post("/sessions/lifting_section", tags=["Lifting Section"])
-async def add_lifting_section(liftingSection: ExerciseSection):
-    insert_lifting_section(liftingSection=liftingSection)
-    return {"message": "Add lifting section to session successfully"}
-
-
-# Update: Add aerobics to session
-@app.post("/sessions/aerobics_section", tags=["Aerobics Section"])
-async def add_session_exercise(aerobicsSection: ExerciseSection):
-    insert_aerobics_section(aerobicsSection=aerobicsSection)
-    return {"message": "Add aerobics secction to session successfully"}
-
-
-# Update: Delete lifting section by sectionId
-@app.delete("/sessions/lifting_section/{sectionId}", tags=["Lifting Section"])
-async def delete_lifting_section_endpoint(sectionId: int):
-    delete_lifting_section(sectionId=sectionId)
-    return {"message": "Delete lifting section successfully"}
-
-
-# Update: Delete aerobics section by sectionId
-@app.delete("/sessions/aerobics_section/{sectionId}", tags=["Aerobics Section"])
-async def delete_aerobics_section_endpoint(sectionId: int):
-    delete_aerobics_section(sectionId=sectionId)
-    return {"message": "Delete aerobics section successfully"}
-
-
-# Update: Fetch all lifting sections and aerobics sections in session
+# IMPORTANT: Specific session routes MUST come before generic /sessions/{userId}
 @app.get("/sessions/{sessionId}/exercises", tags=["Session"])
 async def get_session_exercise_section(sessionId: int):
     return {"exercises": fetch_exercise_section_by_session_id(sessionId=sessionId)}
 
 
-"""Mike's update part1 end"""
+@app.post("/sessions/exercises", tags=["Session"])
+async def add_exercise_to_session(exerciseSection: ExerciseSection):
+    try:
+        fetch_lifting_by_name(exerciseSection.exerciseName)
+        insert_lifting_section(liftingSection=exerciseSection)
+    except:
+        insert_aerobics_section(aerobicsSection=exerciseSection)
+    return {"message": "Add exercise to session successfully"}
+
+
+@app.delete("/sessions/exercises/{sessionId}/{exerciseName}", tags=["Session"])
+async def remove_exercise_from_session(sessionId: int, exerciseName: str):
+    try:
+        section_id = get_lifting_section_id(sessionId, exerciseName)
+        delete_lifting_section(sectionId=section_id)
+    except:
+        section_id = get_aerobics_section_id(sessionId, exerciseName)
+        delete_aerobics_section(sectionId=section_id)
+    return {"message": "Remove exercise from session successfully"}
+
+
+# Generic session routes come AFTER specific ones
+@app.get("/sessions/{userId}", tags=["Session"])
+async def get_user_sessions(userId: int):
+    return {"sessions": fetch_sessions_by_user_id(userId=userId)}
 
 
 @app.post("/sessions/{userId}", tags=["Session"])
@@ -173,7 +153,6 @@ async def delete_user_session(userId: int, sessionId: int):
     return {"message": "Delete user's session successfully"}
 
 
-# Exercise
 @app.get("/exercises", tags=["Exercise"])
 async def get_exercises():
     return {"exercises": fetch_exercises()}
@@ -204,86 +183,68 @@ async def get_exercise_by_equipment(equipmentName: str):
     return {"exercises": fetch_exercise_by_equipment_name(equipmentName=equipmentName)}
 
 
-# Aerobics
 @app.get("/exercises/aerobics/{aerobicsName}", tags=["Aerobics"])
 async def get_aerobics_by_name(aerobicsName: str):
     return {"aerobics": fetch_aerobics_by_name(aerobicsName=aerobicsName)}
 
 
-"""Mike's update part2 start"""
+@app.get("/exercises/aerobics/{aerobicName}/metrics/{sessionId}", tags=["Aerobics"])
+async def get_metrics_for_aerobic(aerobicName: str, sessionId: int):
+    section_id = get_aerobics_section_id(sessionId, aerobicName)
+    return {"metrics": fetch_aerobics_section_metric(sectionId=section_id)}
 
 
-# Update: Add metric to aerobics section
-@app.post("/exercises/aerobics_section/{sectionId}/metrics", tags=["Aerobics Section"])
-async def add_aerobics_section_metric(sectionId: int, metric: Metric):
-    insert_aerobics_section_metric(sectionId=sectionId, metric=metric)
+@app.post("/exercises/aerobics/{aerobicName}/metrics/{sessionId}", tags=["Aerobics"])
+async def add_metric_to_aerobic(aerobicName: str, sessionId: int, metric: Metric):
+    section_id = get_aerobics_section_id(sessionId, aerobicName)
+    insert_aerobics_section_metric(sectionId=section_id, metric=metric)
     return {"message": "Add metric successfully"}
 
 
-# Update: Get metric of aerobics section
-@app.get("/exercises/aerobics_section/{sectionId}/metrics", tags=["Aerobics Section"])
-async def get_aerobics_section_metric(sectionId: int):
-    return {"metrics": fetch_aerobics_section_metric(sectionId=sectionId)}
-
-
-# Update: Update metric of aerobics section
-@app.put("/exercises/aerobics_section/metrics/{metricId}", tags=["Aerobics Section"])
-async def update_aerobics_section_metric_endpoint(metricId: int, metric: Metric):
-    update_aerobics_section_metric(metricId=metricId, metric=metric)
+@app.put("/exercises/aerobics/{aerobicName}/metrics/{sessionId}", tags=["Aerobics"])
+async def update_metric_for_aerobic(aerobicName: str, sessionId: int, metric: Metric):
+    metric_id = get_aerobics_metric_id(sessionId, aerobicName)
+    update_aerobics_section_metric(metricId=metric_id, metric=metric)
     return {"message": "Update metric successfully"}
 
 
-# Update: Delete metric oif aerobics section
-@app.delete("/exercises/aerobics_section/metrics/{metricId}", tags=["Aerobics Section"])
-async def delete_aerobics_section_metric_endpoint(metricId: int):
-    delete_aerobics_section_metric(metricId=metricId)
+@app.delete("/exercises/aerobics/{aerobicName}/metrics/{sessionId}", tags=["Aerobics"])
+async def delete_metric_from_aerobic(aerobicName: str, sessionId: int):
+    metric_id = get_aerobics_metric_id(sessionId, aerobicName)
+    delete_aerobics_section_metric(metricId=metric_id)
     return {"message": "Delete metric successfully"}
 
 
-"""Mike's update part2 end"""
-
-
-# Lifting
 @app.get("/exercises/lifting/{liftingName}", tags=["Lifting"])
 async def get_lifting_by_name(liftingName: str):
     return {"lifting": fetch_lifting_by_name(liftingName=liftingName)}
 
 
-"""Mike's update part3 start"""
+@app.get("/exercises/lifting/{liftingName}/sets/{sessionId}", tags=["Lifting"])
+async def get_sets_for_lifting(liftingName: str, sessionId: int):
+    section_id = get_lifting_section_id(sessionId, liftingName)
+    return {"sets": fetch_lifting_section_sets(sectionId=section_id)}
 
 
-# Update: Add set to lifting section
-@app.post("/exercises/lifting_section/{sectionId}/sets", tags=["Lifting Section"])
-async def add_lifting_section_set(sectionId: int, set: Set):
-    insert_lifting_section_set(sectionId=sectionId, set=set)
+@app.post("/exercises/lifting/{liftingName}/sets/{sessionId}", tags=["Lifting"])
+async def add_set_to_lifting(liftingName: str, sessionId: int, set: Set):
+    section_id = get_lifting_section_id(sessionId, liftingName)
+    insert_lifting_section_set(sectionId=section_id, set=set)
     return {"message": "Add set successfully"}
 
 
-# Update: Get sets of lifting section
-@app.get("/exercises/lifting_section/{sectionId}/sets", tags=["Lifting Section"])
-async def get_lifting_section_sets(sectionId: int):
-    return {"sets": fetch_lifting_section_sets(sectionId=sectionId)}
-
-
-# Update: Update set of lifting section
-@app.put(
-    "/exercises/lifting_section/sets/{sectionId}/{setNum}", tags=["Lifting Section"]
-)
-async def update_lifting_section_set_endpoint(sectionId: int, setNum: int, set: Set):
-    update_lifting_section_set(sectionId=sectionId, setNum=setNum, set=set)
+@app.put("/exercises/lifting/{liftingName}/sets/{sessionId}/{setNum}", tags=["Lifting"])
+async def update_set_for_lifting(liftingName: str, sessionId: int, setNum: int, set: Set):
+    section_id = get_lifting_section_id(sessionId, liftingName)
+    update_lifting_section_set(sectionId=section_id, setNum=setNum, set=set)
     return {"message": "Update set successfully"}
 
 
-# Update: Delete set of lifting section
-@app.delete(
-    "/exercises/lifting_section/sets/{sectionId}/{setNum}", tags=["Lifting Section"]
-)
-async def delete_lifting_section_set_endpoint(sectionId: int, setNum: int):
-    delete_lifting_section_set(sectionId=sectionId, setNum=setNum)
+@app.delete("/exercises/lifting/{liftingName}/sets/{sessionId}/{setNum}", tags=["Lifting"])
+async def delete_set_from_lifting(liftingName: str, sessionId: int, setNum: int):
+    section_id = get_lifting_section_id(sessionId, liftingName)
+    delete_lifting_section_set(sectionId=section_id, setNum=setNum)
     return {"message": "Delete set successfully"}
-
-
-"""Mike's update part3 end"""
 
 
 @app.get("/exercises/lifting/{liftingName}/muscles", tags=["Lifting"])
@@ -296,7 +257,6 @@ async def get_muscle_liftings(muscleName: str):
     return {"liftings": fetch_liftings_by_muscle_name(muscleName=muscleName)}
 
 
-# Muscle
 @app.get("/muscles/{muscleName}/group", tags=["Muscle"])
 async def get_muscle_group(muscleName: str):
     return {"muscle_group": fetch_muscle_group(muscleName=muscleName)}

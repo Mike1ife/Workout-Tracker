@@ -18,6 +18,7 @@ CREATE TABLE users (
 -- Food
 CREATE TABLE food (
   food_name VARCHAR(64) NOT NULL,
+  serving_size VARCHAR(64) NOT NULL DEFAULT '100g',
   calories DECIMAL(7,2) AS (carbohydrate * 4 + protein * 4 + fat * 9) STORED,
   carbohydrate DEC(5,2) NOT NULL,
   protein DEC(5,2) NOT NULL,
@@ -32,8 +33,10 @@ CREATE TABLE food (
 CREATE TABLE user_food (
   user_id INT NOT NULL,
   food_name VARCHAR(64) NOT NULL,
+  quantity DECIMAL(5,2) NOT NULL DEFAULT 1.0,
   create_at DATETIME DEFAULT NOW(),
   CONSTRAINT user_food_pk PRIMARY KEY (user_id, food_name, create_at),
+  CONSTRAINT user_food_quantity_chk CHECK (quantity > 0),
   CONSTRAINT user_food_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id)
     ON UPDATE CASCADE ON DELETE CASCADE,
   CONSTRAINT user_food_food_fk FOREIGN KEY (food_name) REFERENCES food(food_name)
@@ -279,27 +282,30 @@ BEGIN
             SET MESSAGE_TEXT = 'User does not exist';
     END IF;
 
-    SELECT f.*, uf.create_at
+    SELECT f.*, uf.quantity, uf.create_at
     FROM user_food AS uf
     JOIN food AS f ON uf.food_name = f.food_name
-    WHERE uf.user_id = p_user_id;
+    WHERE uf.user_id = p_user_id
+    ORDER BY uf.create_at DESC;
 END $$
 
 CREATE PROCEDURE sp_insert_food(
     IN p_food_name VARCHAR(64),
+    IN p_serving_size VARCHAR(64),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
 )
 BEGIN
-    INSERT INTO food (food_name, carbohydrate, protein, fat)
-    VALUES (p_food_name, p_carbohydrate, p_protein, p_fat);
+    INSERT INTO food (food_name, serving_size, carbohydrate, protein, fat)
+    VALUES (p_food_name, p_serving_size, p_carbohydrate, p_protein, p_fat);
 END $$
 
 CREATE PROCEDURE sp_insert_user_food_log(
     IN p_user_id INT,
     IN p_food_name VARCHAR(64),
-    IN p_create_at DATETIME
+    IN p_create_at DATETIME,
+    IN p_quantity DECIMAL(5,2)
 )
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = p_user_id) THEN
@@ -312,12 +318,13 @@ BEGIN
             SET MESSAGE_TEXT = 'Food does not exist';
     END IF;
 
-    INSERT INTO user_food (user_id, food_name, create_at)
-    VALUES (p_user_id, p_food_name, p_create_at);
+    INSERT INTO user_food (user_id, food_name, quantity, create_at)
+    VALUES (p_user_id, p_food_name, p_quantity, p_create_at);
 END $$
 
 CREATE PROCEDURE sp_update_food(
     IN p_food_name VARCHAR(64),
+    IN p_serving_size VARCHAR(64),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -329,7 +336,8 @@ BEGIN
     END IF;
 
     UPDATE food
-    SET carbohydrate = p_carbohydrate,
+    SET serving_size = p_serving_size,
+        carbohydrate = p_carbohydrate,
         protein = p_protein,
         fat = p_fat
     WHERE food_name = p_food_name;
@@ -495,13 +503,13 @@ BEGIN
             SET MESSAGE_TEXT = 'Session does not exist';
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM aerobic WHERE exercise_name = p_exercise_name) THEN
+    IF NOT EXISTS (SELECT 1 FROM aerobics WHERE exercise_name = p_aerobics_name) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics does not exist';
     END IF;
 
     INSERT INTO aerobics_section (session_id, exercise_name)
-    VALUES (p_session_id, p_exercise_name);
+    VALUES (p_session_id, p_aerobics_name);
 END $$
 
 CREATE PROCEDURE sp_delete_lifting_section(
@@ -852,24 +860,24 @@ END $$
 
 DELIMITER ;
 
--- Foods
-INSERT INTO food (food_name, carbohydrate, protein, fat)
+-- Foods (All normalized to 100g)
+INSERT INTO food (food_name, serving_size, carbohydrate, protein, fat)
 VALUES
-('Chicken Breast', 0, 31, 3.6),
-('Brown Rice', 45, 5, 1.8),
-('Broccoli', 7, 2.8, 0.4),
-('Salmon', 0, 25, 13),
-('Sweet Potato', 20, 2, 0.1),
-('Eggs', 1.1, 13, 11),
-('Oatmeal', 27, 5, 3),
-('Banana', 27, 1.3, 0.4),
-('Almonds', 6, 21, 49),
-('Greek Yogurt', 6, 17, 5),
-('Avocado', 9, 2, 15),
-('Spinach', 3.6, 2.9, 0.4),
-('Quinoa', 21, 4.4, 1.9),
-('Tuna', 0, 30, 1),
-('Whole Wheat Bread', 12, 4, 1.5);
+('Chicken Breast', '100g', 0, 31, 3.6),
+('Brown Rice', '100g', 23, 2.5, 0.9),
+('Broccoli', '100g', 7, 2.8, 0.4),
+('Salmon', '100g', 0, 25, 8.5),
+('Sweet Potato', '100g', 20, 2, 0.2),
+('Eggs', '100g', 0.7, 13, 9.5),
+('Oatmeal', '100g', 12, 2.5, 1.5),
+('Banana', '100g', 23, 1.1, 0.3),
+('Almonds', '100g', 22, 21, 49),
+('Greek Yogurt', '100g', 3.6, 10, 0.4),
+('Avocado', '100g', 9, 2, 15),
+('Spinach', '100g', 3.6, 2.9, 0.4),
+('Quinoa', '100g', 21, 4.4, 1.9),
+('Tuna', '100g', 0, 26, 0.8),
+('Whole Wheat Bread', '100g', 41, 13, 3.4);
 
 -- Exercises
 INSERT INTO exercise (exercise_name, description)
@@ -878,7 +886,7 @@ VALUES
 ('Incline Bench Press', 'Incline barbell press for upper chest'),
 ('Decline Bench Press', 'Decline barbell press for lower chest'),
 ('Dumbbell Chest Press', 'Dumbbell-based chest pressing movement'),
-('Dumbbell Flyes', 'Chest isolation exercise using dumbbells'),
+('Dumbbell Flies', 'Chest isolation exercise using dumbbells'),
 ('Push Ups', 'Bodyweight chest push movement'),
 
 ('Lat Pulldown', 'Back exercise targeting lats'),
@@ -1056,9 +1064,9 @@ VALUES
   ('Decline Bench Press', 'Weight Plates'),
   ('Dumbbell Chest Press', 'Dumbbells'),
   ('Dumbbell Chest Press', 'Bench'),
-  ('Dumbbell Flyes', 'Dumbbells'),
-  ('Dumbbell Flyes', 'Bench'),
-  ('Dumbbell Flyes', 'Pec Deck Machine'),
+  ('Dumbbell Flies', 'Dumbbells'),
+  ('Dumbbell Flies', 'Bench'),
+  ('Dumbbell Flies', 'Pec Deck Machine'),
   ('Push Ups', 'Resistance Bands'),
   ('Lat Pulldown', 'Lat Pulldown Machine'),
   ('Lat Pulldown', 'Cable Machine'),
@@ -1188,7 +1196,7 @@ VALUES
   ('Dumbbell Chest Press', 'Pectoralis Major'),
   ('Dumbbell Chest Press', 'Anterior Deltoid'),
   ('Dumbbell Chest Press', 'Triceps Long Head'),
-  ('Dumbbell Flyes', 'Pectoralis Major'),
+  ('Dumbbell Flies', 'Pectoralis Major'),
   ('Push Ups', 'Pectoralis Major'),
   ('Push Ups', 'Anterior Deltoid'),
   ('Push Ups', 'Triceps Long Head'),

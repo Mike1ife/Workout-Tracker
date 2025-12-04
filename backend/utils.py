@@ -1,4 +1,4 @@
-import time
+from datetime import timedelta
 import pymysql
 from typing import List
 from fastapi import HTTPException
@@ -98,6 +98,7 @@ def fetch_all_foods() -> List[Food]:
     return [
         Food(
             foodName=row["food_name"],
+            servingSize=row.get("serving_size", "100g"),
             calories=row.get("calories"),
             carbohydrate=row["carbohydrate"],
             protein=row["protein"],
@@ -112,6 +113,7 @@ def fetch_food(foodName: str) -> Food:
     row = rows[0]
     return Food(
         foodName=row["food_name"],
+        servingSize=row.get("serving_size", "100g"),
         calories=row.get("calories"),
         carbohydrate=row["carbohydrate"],
         protein=row["protein"],
@@ -119,15 +121,17 @@ def fetch_food(foodName: str) -> Food:
     )
 
 
-def fetch_foods_by_user_id(userId: int) -> List[Food]:
+def fetch_foods_by_user_id(userId: int) -> List[dict]:
     rows = _call_proc("sp_fetch_foods_by_user_id", (userId,))
     return [
         {
             "foodName": row["food_name"],
+            "servingSize": row.get("serving_size", "100g"),
             "calories": row["calories"],
             "carbohydrate": row["carbohydrate"],
             "protein": row["protein"],
             "fat": row["fat"],
+            "quantity": float(row.get("quantity", 1.0)),
             "create_at": row.get("create_at"),
         }
         for row in rows
@@ -136,19 +140,40 @@ def fetch_foods_by_user_id(userId: int) -> List[Food]:
 
 def insert_food(food: Food):
     _call_proc(
-        "sp_insert_food", (food.foodName, food.carbohydrate, food.protein, food.fat)
+        "sp_insert_food",
+        (
+            food.foodName,
+            food.servingSize,
+            food.carbohydrate,
+            food.protein,
+            food.fat,
+        ),
     )
 
 
 def insert_user_food_log(userFoodLog: UserFoodLog):
     _call_proc(
         "sp_insert_user_food_log",
-        (userFoodLog.userId, userFoodLog.foodName, userFoodLog.createAt),
+        (
+            userFoodLog.userId,
+            userFoodLog.foodName,
+            userFoodLog.createAt,
+            userFoodLog.quantity,
+        ),
     )
 
 
 def update_food(foodName: str, food: Food):
-    _call_proc("sp_update_food", (foodName, food.carbohydrate, food.protein, food.fat))
+    _call_proc(
+        "sp_update_food",
+        (
+            foodName,
+            food.servingSize,
+            food.carbohydrate,
+            food.protein,
+            food.fat,
+        ),
+    )
 
 
 def delete_food(foodName: str):
@@ -213,9 +238,6 @@ def delete_session(userId: int, sessionId: int):
     _call_proc("sp_delete_session", (userId, sessionId))
 
 
-"""Mike's update part1 start"""
-
-
 def insert_lifting_section(liftingSection: ExerciseSection):
     _call_proc(
         "sp_insert_lifting_section",
@@ -241,9 +263,6 @@ def delete_aerobics_section(sectionId: int):
 def fetch_exercise_section_by_session_id(sessionId: int) -> List[str]:
     rows = _call_proc("sp_fetch_exercise_section_by_session_id", (sessionId,))
     return [row["exercise_name"] for row in rows]
-
-
-"""Mike's update part1 end"""
 
 
 def fetch_exercises() -> List[dict]:
@@ -293,9 +312,6 @@ def fetch_aerobics_by_name(aerobicsName: str) -> dict:
     }
 
 
-"""Mike's update part2 start"""
-
-
 def insert_aerobics_section_metric(sectionId: int, metric: Metric):
     _call_proc(
         "sp_insert_aerobics_section_metric",
@@ -308,10 +324,20 @@ def fetch_aerobics_section_metric(sectionId: int) -> List[Metric]:
     result = []
 
     for row in rows:
-        if isinstance(row.get("duration"), time):
-            row["duration"] = row["duration"].strftime("%H:%M:%S")
+        duration_str = None
+        if row.get("duration") is not None:
+            duration = row["duration"]
+            if isinstance(duration, timedelta):
+                total_seconds = int(duration.total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            else:
+                duration_str = str(duration)
 
-        result.append(Metric(duration=row["duration"], distance=row["distance"]))
+        result.append(Metric(duration=duration_str, distance=row.get("distance")))
+    
     return result
 
 
@@ -393,3 +419,55 @@ def fetch_muscle_group(muscleName: str) -> MuscleGroup:
 def fetch_group_muscle(groupName: str) -> List[Muscle]:
     rows = _call_proc("sp_fetch_group_muscle", (groupName,))
     return [Muscle(**row) for row in rows]
+
+
+def get_lifting_section_id(sessionId: int, exerciseName: str) -> int:
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT lifting_section_id FROM lifting_section WHERE session_id = %s AND exercise_name = %s",
+                (sessionId, exerciseName)
+            )
+            result = cursor.fetchone()
+            if not result:
+                raise HTTPException(status_code=404, detail="Lifting section not found")
+            return result['lifting_section_id']
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+def get_aerobics_section_id(sessionId: int, exerciseName: str) -> int:
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT aerobics_section_id FROM aerobics_section WHERE session_id = %s AND exercise_name = %s",
+                (sessionId, exerciseName)
+            )
+            result = cursor.fetchone()
+            if not result:
+                raise HTTPException(status_code=404, detail="Aerobics section not found")
+            return result['aerobics_section_id']
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+def get_aerobics_metric_id(sessionId: int, exerciseName: str) -> int:
+    try:
+        section_id = get_aerobics_section_id(sessionId, exerciseName)
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT metric_id FROM metric WHERE aerobics_section_id = %s LIMIT 1",
+                (section_id,)
+            )
+            result = cursor.fetchone()
+            if not result:
+                raise HTTPException(status_code=404, detail="Metric not found")
+            return result['metric_id']
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

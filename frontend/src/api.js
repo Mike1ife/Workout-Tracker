@@ -221,6 +221,7 @@ export const foodAPI = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         foodName: foodData.foodName,
+        servingSize: foodData.servingSize,
         carbohydrate: foodData.carbohydrate,
         protein: foodData.protein,
         fat: foodData.fat
@@ -229,13 +230,28 @@ export const foodAPI = {
     return handleResponse(response);
   },
 
-  logFood: async (userId, foodName, createAt) => {
+  updateFood: async (foodName, foodData) => {
+    const response = await fetch(`${BASE_URL}/foods/${foodName}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        servingSize: foodData.servingSize,
+        carbohydrate: foodData.carbohydrate,
+        protein: foodData.protein,
+        fat: foodData.fat
+      })
+    });
+    return handleResponse(response);
+  },
+
+  logFood: async (userId, foodName, quantity, createAt) => {
     const response = await fetch(`${BASE_URL}/foods/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId,
         foodName,
+        quantity: quantity || 1.0,
         createAt: createAt || new Date().toISOString().slice(0, 19).replace('T', ' ')
       })
     });

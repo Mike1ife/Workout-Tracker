@@ -14,6 +14,7 @@ class User(BaseModel):
 
 class Food(BaseModel):
     foodName: str
+    servingSize: Optional[str] = "1 serving"
     calories: Optional[float] = None
     carbohydrate: float
     protein: float
@@ -23,6 +24,7 @@ class Food(BaseModel):
 class UserFoodLog(BaseModel):
     userId: int
     foodName: str
+    quantity: Optional[float] = 1.0
     createAt: Optional[str]
 
 
@@ -70,4 +72,4 @@ class Set(BaseModel):
 
 class Metric(BaseModel):
     duration: Optional[str] = None
-    distance: Optional[str] = None
+    distance: Optional[float] = None

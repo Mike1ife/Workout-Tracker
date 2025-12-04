@@ -130,6 +130,12 @@ body {
   color: #6b7280;
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -204,6 +210,11 @@ body {
   background-color: #1d4ed8;
 }
 
+.btn-full-width {
+  width: 100%;
+  justify-content: center;
+}
+
 .btn-secondary {
   display: flex;
   align-items: center;
@@ -223,6 +234,18 @@ body {
 .btn-secondary:hover {
   background-color: #f9fafb;
   border-color: #9ca3af;
+}
+
+.btn-icon-only {
+  padding: 0.5rem;
+}
+
+.btn-back {
+  padding: 0.5rem 1rem;
+}
+
+.btn-logout {
+  padding: 0.5rem 1rem;
 }
 
 .btn-small {
@@ -308,6 +331,10 @@ body {
   padding: 1.5rem;
 }
 
+.card-spacing {
+  margin-bottom: 1.5rem;
+}
+
 .card-title {
   font-size: 1.125rem;
   font-weight: bold;
@@ -348,7 +375,6 @@ body {
   margin-bottom: 1rem;
 }
 
-/* Action button group for section headers */
 .section-actions {
   display: flex;
   gap: 0.5rem;
@@ -458,6 +484,12 @@ body {
   flex: 1;
 }
 
+.session-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .session-header {
   display: flex;
   align-items: center;
@@ -502,7 +534,6 @@ body {
   color: #9ca3af;
 }
 
-/* Session Detail View */
 .session-detail-header {
   display: flex;
   justify-content: space-between;
@@ -644,7 +675,6 @@ body {
   line-height: 1.5;
 }
 
-/* Exercise Detail Cards */
 .exercises-section {
   background-color: white;
   border-radius: 0.5rem;
@@ -805,6 +835,13 @@ body {
   flex-wrap: wrap;
 }
 
+.food-quantity-badge {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: normal;
+}
+
 .macro-badge {
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
@@ -834,15 +871,43 @@ body {
   background-color: white;
 }
 
-.food-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
+.food-card-relative {
+  position: relative;
 }
 
-.food-icon {
-  color: #16a34a;
+.food-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-right: 2rem;
+}
+
+.food-edit-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.375rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.food-edit-btn:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.food-serving-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
 }
 
 .food-calories {
@@ -856,6 +921,10 @@ body {
   font-weight: 600;
   color: #111827;
   margin-bottom: 0.75rem;
+}
+
+.food-name-no-margin {
+  margin: 0;
 }
 
 .food-macros {
@@ -919,6 +988,61 @@ body {
   font-size: 1rem;
   font-weight: 600;
   color: #111827;
+}
+
+/* Quantity Controls */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quantity-btn {
+  padding: 0.5rem;
+  min-width: 2.5rem;
+}
+
+.quantity-input {
+  text-align: center;
+  flex: 1;
+}
+
+.quantity-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.quantity-summary {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+/* Food Form Helpers */
+.form-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.calorie-preview {
+  padding: 0.75rem;
+  background-color: #f0f9ff;
+  border-radius: 0.5rem;
+  border: 1px solid #bae6fd;
+}
+
+.calorie-preview-text {
+  font-size: 0.875rem;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+.food-name-disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
 }
 
 /* ===================================
@@ -1116,6 +1240,11 @@ body {
   font-style: italic;
 }
 
+.no-data-compact {
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
 /* ===================================
    RESPONSIVE DESIGN
    =================================== */
@@ -1154,5 +1283,9 @@ body {
   .session-detail-header .btn-primary,
   .session-detail-header .btn-secondary {
     width: 100%;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
   }
 }
