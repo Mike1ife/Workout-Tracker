@@ -14,7 +14,7 @@ cd Workout-Tracker
 pip install requirements.txt
 ```
 ```python
-backend/utils.py
+# backend/utils.py
 conn = pymysql.connect(
     host="localhost",
     user="user", # Change to your MySQL username
