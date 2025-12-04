@@ -1202,6 +1202,10 @@ input[type="number"]::-webkit-outer-spin-button {
   margin: 0;
 }
 
+input[type="number"].form-input {
+  -moz-appearance: textfield;
+}
+
 .form-textarea {
   resize: vertical;
 }
@@ -1252,6 +1256,177 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* ===================================
+   INLINE STYLE REPLACEMENTS
+   =================================== */
+
+/* Modal title with action button */
+.modal-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.modal-title-row .modal-title {
+  margin: 0;
+}
+
+.modal-title-row .btn-delete {
+  margin-left: 1rem;
+}
+
+/* Macro distribution chart */
+.macro-chart-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.macro-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.macro-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.macro-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.macro-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 0.5rem 0;
+}
+
+.macro-stats-total {
+  margin-bottom: 0.5rem;
+}
+
+.macro-stats-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.macro-stats-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.macro-stats-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.macro-stats-secondary-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Food log controls */
+.food-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.food-log-header .card-title {
+  margin: 0;
+}
+
+.date-range-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.date-range-controls .form-input {
+  width: auto;
+  padding: 0.5rem;
+}
+
+.custom-date-range {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.custom-date-range .form-input {
+  width: auto;
+}
+
+/* Daily food cards */
+.daily-food-card {
+  margin-bottom: 0;
+}
+
+.daily-food-header {
+  margin-bottom: 0.75rem;
+}
+
+.daily-food-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.daily-food-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.daily-food-totals {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.food-log-days-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Health charts */
+.health-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.chart-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* ===================================
    RESPONSIVE DESIGN
    =================================== */
 @media (max-width: 768px) {
@@ -1293,5 +1468,9 @@ input[type="number"]::-webkit-outer-spin-button {
 
   .header-actions {
     flex-wrap: wrap;
+  }
+
+  .health-charts-grid {
+    grid-template-columns: 1fr;
   }
 }
