@@ -209,6 +209,11 @@ const Dashboard = () => {
   const [showLogFood, setShowLogFood] = useState(false);
   const [showEditFood, setShowEditFood] = useState(false);
   const [editingFood, setEditingFood] = useState(null);
+  const [editingFoodLog, setEditingFoodLog] = useState(null);
+  const [showEditFoodLog, setShowEditFoodLog] = useState(false);
+  const [foodLogDateRange, setFoodLogDateRange] = useState('7days');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   const [selectedSession, setSelectedSession] = useState(null);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [showAddSet, setShowAddSet] = useState(false);
@@ -344,6 +349,82 @@ const Dashboard = () => {
     const diff = Math.abs(endDate - startDate);
     const minutes = Math.floor(diff / 1000 / 60);
     return `${minutes} min`;
+  };
+
+  const getFilteredFoodLogs = () => {
+    const now = new Date();
+    let startDate = new Date();
+    
+    switch(foodLogDateRange) {
+      case '7days':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30days':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case 'thisMonth':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'lastMonth':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        return userFoods.filter(food => {
+          const foodDate = new Date(food.create_at);
+          return foodDate >= startDate && foodDate <= endDate;
+        });
+      case 'custom':
+        if (!customStartDate || !customEndDate) return userFoods;
+        const customStart = new Date(customStartDate);
+        const customEnd = new Date(customEndDate);
+        customEnd.setHours(23, 59, 59, 999);
+        return userFoods.filter(food => {
+          const foodDate = new Date(food.create_at);
+          return foodDate >= customStart && foodDate <= customEnd;
+        });
+      default:
+        startDate.setDate(now.getDate() - 7);
+    }
+    
+    return userFoods.filter(food => {
+      const foodDate = new Date(food.create_at);
+      return foodDate >= startDate;
+    });
+  };
+
+  const groupFoodsByDate = (foods) => {
+    const grouped = {};
+    
+    foods.forEach(food => {
+      const dateKey = food.create_at.split('T')[0] || food.create_at.split(' ')[0];
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(food);
+    });
+    
+    return grouped;
+  };
+
+  const calculateDailyTotals = (foods) => {
+    let totalCals = 0;
+    let totalCarbs = 0;
+    let totalProtein = 0;
+    let totalFat = 0;
+    
+    foods.forEach(food => {
+      const qty = food.quantity || 1;
+      totalCals += (food.calories || 0) * qty;
+      totalCarbs += (food.carbohydrate || 0) * qty;
+      totalProtein += (food.protein || 0) * qty;
+      totalFat += (food.fat || 0) * qty;
+    });
+    
+    return {
+      calories: Math.round(totalCals),
+      carbs: Math.round(totalCarbs * 10) / 10,
+      protein: Math.round(totalProtein * 10) / 10,
+      fat: Math.round(totalFat * 10) / 10
+    };
   };
 
   const StatCard = ({ icon: Icon, label, value, trend }) => (
@@ -1396,10 +1477,36 @@ const Dashboard = () => {
       }
     };
 
+    const handleDelete = async () => {
+      if (!window.confirm(`Are you sure you want to delete "${editingFood.foodName}"? This will also delete all food logs associated with it.`)) {
+        return;
+      }
+
+      try {
+        await api.food.deleteFood(editingFood.foodName);
+        setShowEditFood(false);
+        setEditingFood(null);
+        fetchFoods();
+        alert('Food deleted successfully!');
+      } catch (err) {
+        alert('Error deleting food: ' + err.message);
+      }
+    };
+
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <h3 className="modal-title">Edit Food - {editingFood.foodName}</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+            <h3 className="modal-title" style={{ margin: 0 }}>Edit Food - {editingFood.foodName}</h3>
+            <button
+              onClick={handleDelete}
+              className="btn-delete"
+              title="Delete food"
+              style={{ marginLeft: '1rem' }}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
           
           <div className="form-container">
             <div className="form-group">
@@ -1660,6 +1767,196 @@ const Dashboard = () => {
     );
   };
 
+  const EditFoodLogForm = () => {
+    const [quantity, setQuantity] = useState(editingFoodLog.quantity || 1);
+    const [logDate, setLogDate] = useState(
+      editingFoodLog.create_at.split('T')[0] || editingFoodLog.create_at.split(' ')[0]
+    );
+
+    const adjustQuantity = (delta) => {
+      setQuantity(prev => Math.max(0.1, Number((prev + delta).toFixed(1))));
+    };
+
+    const calculateTotal = (value) => {
+      return Math.round(value * quantity * 10) / 10;
+    };
+
+    const handleSubmit = async () => {
+      if (quantity <= 0) {
+        alert('Quantity must be greater than 0');
+        return;
+      }
+
+      try {
+        const oldCreateAt = editingFoodLog.create_at.split('T')[0] || editingFoodLog.create_at.split(' ')[0];
+        const oldTime = editingFoodLog.create_at.split('T')[1]?.substring(0, 8) || 
+                        editingFoodLog.create_at.split(' ')[1]?.substring(0, 8) || '00:00:00';
+        
+        // Delete old log
+        await api.food.deleteUserFoodLog(
+          currentUser.user_id, 
+          editingFoodLog.foodName,
+          `${oldCreateAt} ${oldTime}`
+        );
+        
+        // Create new log with updated values
+        const newCreateAt = `${logDate} ${oldTime}`;
+        await api.food.logFood(currentUser.user_id, editingFoodLog.foodName, quantity, newCreateAt);
+        
+        setShowEditFoodLog(false);
+        setEditingFoodLog(null);
+        fetchFoods();
+        alert('Food log updated successfully!');
+      } catch (err) {
+        alert('Error updating food log: ' + err.message);
+      }
+    };
+
+    const handleDelete = async () => {
+      if (!window.confirm('Are you sure you want to delete this food log entry?')) {
+        return;
+      }
+
+      try {
+        const dateStr = editingFoodLog.create_at.split('T')[0] || editingFoodLog.create_at.split(' ')[0];
+        const timeStr = editingFoodLog.create_at.split('T')[1]?.substring(0, 8) || 
+                        editingFoodLog.create_at.split(' ')[1]?.substring(0, 8) || '00:00:00';
+        
+        await api.food.deleteUserFoodLog(
+          currentUser.user_id, 
+          editingFoodLog.foodName,
+          `${dateStr} ${timeStr}`
+        );
+        
+        setShowEditFoodLog(false);
+        setEditingFoodLog(null);
+        fetchFoods();
+        alert('Food log deleted successfully!');
+      } catch (err) {
+        alert('Error deleting food log: ' + err.message);
+      }
+    };
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+            <h3 className="modal-title" style={{ margin: 0 }}>Edit Food Log</h3>
+            <button
+              onClick={handleDelete}
+              className="btn-delete"
+              title="Delete food log"
+              style={{ marginLeft: '1rem' }}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+          
+          <div className="form-container">
+            <div className="form-group">
+              <label className="form-label">Food</label>
+              <input 
+                type="text" 
+                value={editingFoodLog.foodName}
+                className="form-input food-name-disabled"
+                disabled
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Date</label>
+              <input
+                type="date"
+                value={logDate}
+                onChange={(e) => setLogDate(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Quantity (servings of {editingFoodLog.servingSize || '100g'})
+              </label>
+              <div className="quantity-controls">
+                <button
+                  type="button"
+                  onClick={() => adjustQuantity(-0.5)}
+                  className="btn-secondary quantity-btn"
+                >
+                  <Minus size={16} />
+                </button>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setQuantity(val === '' ? '' : parseFloat(val));
+                  }}
+                  className="form-input quantity-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => adjustQuantity(0.5)}
+                  className="btn-secondary quantity-btn"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+              {quantity !== '' && parseFloat(quantity) <= 0 && (
+                <p className="form-hint" style={{ color: '#dc2626' }}>
+                  Quantity must be greater than 0
+                </p>
+              )}
+            </div>
+
+            <div className="food-preview">
+              <h4>Total Nutritional Info:</h4>
+              <div className="macro-grid">
+                <div className="macro-item">
+                  <span className="macro-label">Calories</span>
+                  <span className="macro-value">
+                    {calculateTotal(editingFoodLog.calories)}
+                  </span>
+                </div>
+                <div className="macro-item">
+                  <span className="macro-label">Carbs</span>
+                  <span className="macro-value">
+                    {calculateTotal(editingFoodLog.carbohydrate)}g
+                  </span>
+                </div>
+                <div className="macro-item">
+                  <span className="macro-label">Protein</span>
+                  <span className="macro-value">
+                    {calculateTotal(editingFoodLog.protein)}g
+                  </span>
+                </div>
+                <div className="macro-item">
+                  <span className="macro-label">Fat</span>
+                  <span className="macro-value">
+                    {calculateTotal(editingFoodLog.fat)}g
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="modal-buttons">
+            <button onClick={() => {
+              setShowEditFoodLog(false);
+              setEditingFoodLog(null);
+            }} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleSubmit} className="btn-primary">
+              Update Log
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
   const AddAerobicMetricForm = () => {
     const [formData, setFormData] = useState({
       duration: '',
@@ -1969,42 +2266,134 @@ const Dashboard = () => {
             </div>
 
             <div className="card card-spacing">
-              <h3 className="card-title">Recent Food Log</h3>
-              <div className="food-log-list">
-                {userFoods.length > 0 ? (
-                  userFoods.slice(0, 10).map((food, i) => {
-                    const qty = food.quantity || 1;
-                    const totalCals = Math.round((food.calories || 0) * qty);
-                    const totalCarbs = Math.round((food.carbohydrate || 0) * qty * 10) / 10;
-                    const totalProtein = Math.round((food.protein || 0) * qty * 10) / 10;
-                    const totalFat = Math.round((food.fat || 0) * qty * 10) / 10;
-                    
-                    return (
-                      <div key={i} className="food-log-item">
-                        <div>
-                          <div className="food-log-name">
-                            {food.foodName || food.food_name}
-                            {qty !== 1 && (
-                              <span className="food-quantity-badge">
-                                ({qty} × {food.servingSize || '100g'})
-                              </span>
-                            )}
-                          </div>
-                          <div className="food-log-date">{formatDate(food.create_at)}</div>
-                        </div>
-                        <div className="food-log-macros">
-                          <span className="macro-badge">{totalCals} cal</span>
-                          <span className="macro-badge">C: {totalCarbs}g</span>
-                          <span className="macro-badge">P: {totalProtein}g</span>
-                          <span className="macro-badge">F: {totalFat}g</span>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="no-data">No food logged yet</p>
-                )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 className="card-title" style={{ margin: 0 }}>Food Log</h3>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <select 
+                    value={foodLogDateRange}
+                    onChange={(e) => setFoodLogDateRange(e.target.value)}
+                    className="form-input"
+                    style={{ width: 'auto', padding: '0.5rem' }}
+                  >
+                    <option value="7days">Last 7 Days</option>
+                    <option value="30days">Last 30 Days</option>
+                    <option value="thisMonth">This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
               </div>
+
+              {foodLogDateRange === 'custom' && (
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="form-input"
+                    style={{ width: 'auto' }}
+                  />
+                  <span>to</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="form-input"
+                    style={{ width: 'auto' }}
+                  />
+                </div>
+              )}
+
+              {(() => {
+                const filteredFoods = getFilteredFoodLogs();
+                const groupedFoods = groupFoodsByDate(filteredFoods);
+                const dates = Object.keys(groupedFoods).sort((a, b) => new Date(b) - new Date(a));
+                
+                if (dates.length === 0) {
+                  return <p className="no-data">No food logged in this date range</p>;
+                }
+                
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {dates.map((date, idx) => {
+                      const foods = groupedFoods[date];
+                      const totals = calculateDailyTotals(foods);
+                      const dateObj = new Date(date + 'T00:00:00');
+                      const today = new Date();
+                      const yesterday = new Date(today);
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      
+                      let dateLabel = formatDate(date);
+                      if (dateObj.toDateString() === today.toDateString()) {
+                        dateLabel = 'Today';
+                      } else if (dateObj.toDateString() === yesterday.toDateString()) {
+                        dateLabel = 'Yesterday';
+                      }
+                      
+                      return (
+                        <div key={idx} className="card" style={{ marginBottom: 0 }}>
+                          <div style={{ marginBottom: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#111827', margin: 0 }}>
+                                {dateLabel}
+                              </h4>
+                              <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                                {totals.calories} cal | C: {totals.carbs}g P: {totals.protein}g F: {totals.fat}g
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="food-log-list">
+                            {foods.map((food, i) => {
+                              const qty = food.quantity || 1;
+                              const totalCals = Math.round((food.calories || 0) * qty);
+                              const totalCarbs = Math.round((food.carbohydrate || 0) * qty * 10) / 10;
+                              const totalProtein = Math.round((food.protein || 0) * qty * 10) / 10;
+                              const totalFat = Math.round((food.fat || 0) * qty * 10) / 10;
+                              
+                              return (
+                                <div key={i} className="food-log-item">
+                                  <div>
+                                    <div className="food-log-name">
+                                      {food.foodName || food.food_name}
+                                      {qty !== 1 && (
+                                        <span className="food-quantity-badge">
+                                          ({qty} × {food.servingSize || '100g'})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div className="food-log-macros">
+                                      <span className="macro-badge">{totalCals} cal</span>
+                                      <span className="macro-badge">C: {totalCarbs}g</span>
+                                      <span className="macro-badge">P: {totalProtein}g</span>
+                                      <span className="macro-badge">F: {totalFat}g</span>
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        setEditingFoodLog(food);
+                                        setShowEditFoodLog(true);
+                                      }}
+                                      className="btn-secondary btn-icon-only"
+                                      title="Edit food log"
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="card">
@@ -2103,6 +2492,7 @@ const Dashboard = () => {
       {showNewFood && <NewFoodForm />}
       {showEditFood && editingFood && <EditFoodForm />}
       {showLogFood && <LogFoodForm />}
+      {showEditFoodLog && editingFoodLog && <EditFoodLogForm />}
       {showAddExercise && <AddExerciseToSessionForm />}
       {showAddSet && <AddSetForm />}
       {showAddAerobicMetric && <AddAerobicMetricForm />}

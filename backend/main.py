@@ -73,6 +73,12 @@ async def add_user_food_log(userFoodLog: UserFoodLog):
     return {"message": "Add user's food log successfully"}
 
 
+@app.delete("/foods/log/{userId}/{foodName}/{createAt}", tags=["User Food Log"])
+async def delete_user_food_log(userId: int, foodName: str, createAt: str):
+    delete_user_food_log_entry(userId=userId, foodName=foodName, createAt=createAt)
+    return {"message": "Delete user's food log successfully"}
+
+
 @app.put("/foods/{foodName}", tags=["Food"])
 async def update_food_by_name(foodName: str, food: Food):
     update_food(foodName=foodName, food=food)

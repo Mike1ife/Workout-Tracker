@@ -322,6 +322,28 @@ BEGIN
     VALUES (p_user_id, p_food_name, p_quantity, p_create_at);
 END $$
 
+CREATE PROCEDURE sp_delete_user_food_log(
+    IN p_user_id INT,
+    IN p_food_name VARCHAR(64),
+    IN p_create_at DATETIME
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM user_food
+        WHERE user_id = p_user_id 
+          AND food_name = p_food_name
+          AND create_at = p_create_at
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User food log entry does not exist';
+    END IF;
+
+    DELETE FROM user_food
+    WHERE user_id = p_user_id
+      AND food_name = p_food_name
+      AND create_at = p_create_at;
+END $$
+
 CREATE PROCEDURE sp_update_food(
     IN p_food_name VARCHAR(64),
     IN p_serving_size VARCHAR(64),

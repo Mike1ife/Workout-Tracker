@@ -161,6 +161,10 @@ def insert_user_food_log(userFoodLog: UserFoodLog):
             userFoodLog.quantity,
         ),
     )
+    
+
+def delete_user_food_log_entry(userId: int, foodName: str, createAt: str):
+    _call_proc("sp_delete_user_food_log", (userId, foodName, createAt))
 
 
 def update_food(foodName: str, food: Food):

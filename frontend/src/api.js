@@ -243,14 +243,21 @@ export const foodAPI = {
     });
     return handleResponse(response);
   },
-  
+
   deleteFood: async (foodName) => {
-  const response = await fetch(`${BASE_URL}/foods/${foodName}`, {
-    method: 'DELETE'
-  });
-  return handleResponse(response);
+    const response = await fetch(`${BASE_URL}/foods/${foodName}`, {
+      method: 'DELETE'
+    });
+    return handleResponse(response);
   },
 
+  deleteUserFoodLog: async (userId, foodName, createAt) => {
+    const response = await fetch(`${BASE_URL}/foods/log/${userId}/${encodeURIComponent(foodName)}/${encodeURIComponent(createAt)}`, {
+      method: 'DELETE'
+    });
+    return handleResponse(response);
+  },
+  
   logFood: async (userId, foodName, quantity, createAt) => {
     const response = await fetch(`${BASE_URL}/foods/log`, {
       method: 'POST',
