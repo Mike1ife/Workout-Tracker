@@ -97,12 +97,11 @@ async def add_user_health_report(userId: int, healthCondition: HealthCondition):
 
 
 @app.delete("/health/{userId}/{createdAt}", tags=["Health"])
-async def delete_health_condition(userId: int, createdAt: str):
+async def delete_user_health_condition(userId: int, createdAt: str):
     delete_health_condition(userId=userId, createdAt=createdAt)
     return {"message": "Delete health condition successfully"}
 
 
-# IMPORTANT: Specific session routes MUST come before generic /sessions/{userId}
 @app.get("/sessions/{sessionId}/exercises", tags=["Session"])
 async def get_session_exercise_section(sessionId: int):
     return {"exercises": fetch_exercise_section_by_session_id(sessionId=sessionId)}
@@ -129,7 +128,6 @@ async def remove_exercise_from_session(sessionId: int, exerciseName: str):
     return {"message": "Remove exercise from session successfully"}
 
 
-# Generic session routes come AFTER specific ones
 @app.get("/sessions/{userId}", tags=["Session"])
 async def get_user_sessions(userId: int):
     return {"sessions": fetch_sessions_by_user_id(userId=userId)}

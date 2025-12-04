@@ -318,6 +318,13 @@ const Dashboard = () => {
     }
   };
 
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    const dateStr = date.split('T')[0] || date.split(' ')[0];
+    const [year, month, day] = dateStr.split('-');
+    return new Date(year, month - 1, day).toLocaleDateString();
+  };
+
   const formatDateTime = (datetime) => {
     if (!datetime) return 'N/A';
     const date = new Date(datetime);
@@ -1114,7 +1121,6 @@ const Dashboard = () => {
   const NewHealthRecordForm = () => {
     const [formData, setFormData] = useState({
       date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().slice(0, 5),
       weight: '',
       body_fat_percent: ''
     });
@@ -1126,10 +1132,8 @@ const Dashboard = () => {
       }
 
       try {
-        const createdAt = `${formData.date} ${formData.time}:00`;
-
         await api.health.createHealthRecord(currentUser.user_id, {
-          createdAt: createdAt,
+          createdAt: formData.date,
           weight: parseFloat(formData.weight),
           body_fat_percent: parseFloat(formData.body_fat_percent)
         });
@@ -1147,25 +1151,14 @@ const Dashboard = () => {
           <h3 className="modal-title">New Health Record</h3>
           
           <div className="form-container">
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Date</label>
-                <input 
-                  type="date" 
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="form-input" 
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Time</label>
-                <input 
-                  type="time" 
-                  value={formData.time}
-                  onChange={(e) => setFormData({...formData, time: e.target.value})}
-                  className="form-input" 
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Date</label>
+              <input 
+                type="date" 
+                value={formData.date}
+                onChange={(e) => setFormData({...formData, date: e.target.value})}
+                className="form-input" 
+              />
             </div>
 
             <div className="form-row">
@@ -1173,7 +1166,6 @@ const Dashboard = () => {
                 <label className="form-label">Weight (lbs)</label>
                 <input 
                   type="number" 
-                  step="0.1"
                   value={formData.weight}
                   onChange={(e) => setFormData({...formData, weight: e.target.value})}
                   className="form-input"
@@ -1184,7 +1176,6 @@ const Dashboard = () => {
                 <label className="form-label">Body Fat (%)</label>
                 <input 
                   type="number" 
-                  step="0.1"
                   value={formData.body_fat_percent}
                   onChange={(e) => setFormData({...formData, body_fat_percent: e.target.value})}
                   className="form-input"
@@ -1213,9 +1204,27 @@ const Dashboard = () => {
     }
 
     try {
-      await api.health.deleteHealthRecord(currentUser.user_id, createdAt);
-      fetchAllData();
+      let dateStr;
+      if (typeof createdAt === 'string') {
+        if (createdAt.includes('T')) {
+          dateStr = createdAt.split('T')[0];
+        } else if (createdAt.includes(' ')) {
+          dateStr = createdAt.split(' ')[0];
+        } else {
+          dateStr = createdAt;
+        }
+      } else {
+        const date = new Date(createdAt);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        dateStr = `${year}-${month}-${day}`;
+      }
+      
+      await api.health.deleteHealthRecord(currentUser.user_id, dateStr);
+      await fetchAllData();
     } catch (err) {
+      console.error('Delete error:', err);
       alert('Error deleting health record: ' + err.message);
     }
   };
@@ -1294,22 +1303,22 @@ const Dashboard = () => {
                 <label className="form-label">Carbs (g)</label>
                 <input 
                   type="number"
-                  step="0.1"
                   value={formData.carbohydrate}
                   onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
                   placeholder="25.5"
+                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Protein (g)</label>
                 <input 
                   type="number"
-                  step="0.1"
                   value={formData.protein}
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
                   placeholder="30.0"
+                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
             </div>
@@ -1318,11 +1327,11 @@ const Dashboard = () => {
               <label className="form-label">Fat (g)</label>
               <input 
                 type="number"
-                step="0.1"
                 value={formData.fat}
                 onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
                 placeholder="5.5"
+                style={{ MozAppearance: 'textfield' }}
               />
             </div>
 
@@ -1401,9 +1410,6 @@ const Dashboard = () => {
                 className="form-input food-name-disabled"
                 disabled
               />
-              <p className="form-hint">
-                Food name cannot be changed
-              </p>
             </div>
             
             <div className="form-group">
@@ -1425,22 +1431,22 @@ const Dashboard = () => {
                 <label className="form-label">Carbs (g)</label>
                 <input 
                   type="number"
-                  step="0.1"
                   value={formData.carbohydrate}
                   onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
                   placeholder="25.5"
+                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Protein (g)</label>
                 <input 
                   type="number"
-                  step="0.1"
                   value={formData.protein}
                   onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
                   placeholder="30.0"
+                  style={{ MozAppearance: 'textfield' }}
                 />
               </div>
             </div>
@@ -1449,11 +1455,11 @@ const Dashboard = () => {
               <label className="form-label">Fat (g)</label>
               <input 
                 type="number"
-                step="0.1"
                 value={formData.fat}
                 onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
                 placeholder="5.5"
+                style={{ MozAppearance: 'textfield' }}
               />
             </div>
 
@@ -1485,6 +1491,7 @@ const Dashboard = () => {
   const LogFoodForm = () => {
     const [selectedFood, setSelectedFood] = useState('');
     const [quantity, setQuantity] = useState(1);
+    const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
 
     const adjustQuantity = (delta) => {
       setQuantity(prev => Math.max(0.1, Number((prev + delta).toFixed(1))));
@@ -1510,10 +1517,12 @@ const Dashboard = () => {
       }
 
       try {
-        await api.food.logFood(currentUser.user_id, selectedFood, quantity);
+        const createAt = `${logDate} ${new Date().toTimeString().split(' ')[0]}`;
+        await api.food.logFood(currentUser.user_id, selectedFood, quantity, createAt);
         setShowLogFood(false);
         setSelectedFood('');
         setQuantity(1);
+        setLogDate(new Date().toISOString().split('T')[0]);
         fetchFoods();
       } catch (err) {
         alert('Error logging food: ' + err.message);
@@ -1545,6 +1554,16 @@ const Dashboard = () => {
               </select>
             </div>
 
+            <div className="form-group">
+              <label className="form-label">Date</label>
+              <input
+                type="date"
+                value={logDate}
+                onChange={(e) => setLogDate(e.target.value)}
+                className="form-input"
+              />
+            </div>
+
             {selectedFood && getSelectedFoodData() && (
               <>
                 <div className="form-group">
@@ -1562,11 +1581,18 @@ const Dashboard = () => {
                     <input
                       type="number"
                       step="0.1"
-                      min="0.1"
                       value={quantity}
-                      onChange={(e) => setQuantity(Math.max(0.1, parseFloat(e.target.value) || 0.1))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setQuantity(val === '' ? '' : parseFloat(val));
+                      }}
                       className="form-input quantity-input"
                     />
+                    {quantity !== '' && parseFloat(quantity) <= 0 && (
+                      <p className="form-hint" style={{ color: '#dc2626' }}>
+                        Quantity must be greater than 0
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => adjustQuantity(0.5)}
@@ -1621,6 +1647,7 @@ const Dashboard = () => {
               setShowLogFood(false);
               setSelectedFood('');
               setQuantity(1);
+              setLogDate(new Date().toISOString().split('T')[0]);
             }} className="btn-secondary">
               Cancel
             </button>
@@ -1720,11 +1747,11 @@ const Dashboard = () => {
               <label className="form-label">Distance (miles)</label>
               <input 
                 type="number" 
-                step="0.1"
                 value={formData.distance}
                 onChange={(e) => setFormData({...formData, distance: e.target.value})}
                 className="form-input"
                 placeholder="3.5"
+                style={{ MozAppearance: 'textfield' }}
               />
             </div>
           </div>
@@ -1837,7 +1864,7 @@ const Dashboard = () => {
               <div className="health-records">
                 {healthRecords.slice(0, 5).map((record, i) => (
                   <div key={i} className="health-record">
-                    <span className="health-date">{formatDateTime(record.createdAt)}</span>
+                    <span className="health-date">{formatDate(record.createdAt)}</span>
                     <div className="health-stats">
                       <span className="health-stat">{record.weight} lbs</span>
                       <span className="health-stat-secondary">{record.body_fat_percent}% BF</span>
@@ -1963,7 +1990,7 @@ const Dashboard = () => {
                               </span>
                             )}
                           </div>
-                          <div className="food-log-date">{formatDateTime(food.create_at)}</div>
+                          <div className="food-log-date">{formatDate(food.create_at)}</div>
                         </div>
                         <div className="food-log-macros">
                           <span className="macro-badge">{totalCals} cal</span>
@@ -2043,7 +2070,7 @@ const Dashboard = () => {
                 {healthRecords.map((record, i) => (
                   <div key={i} className="health-record-card">
                     <div>
-                      <span className="health-record-date">{formatDateTime(record.createdAt)}</span>
+                      <span className="health-record-date">{formatDate(record.createdAt)}</span>
                       <div className="health-record-stats">
                         <div>
                           <span className="label">Weight: </span>

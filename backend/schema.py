@@ -13,7 +13,7 @@ class User(BaseModel):
 
 
 class Food(BaseModel):
-    foodName: str
+    foodName: Optional[str] = None
     servingSize: Optional[str] = "1 serving"
     calories: Optional[float] = None
     carbohydrate: float

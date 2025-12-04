@@ -46,7 +46,7 @@ CREATE TABLE user_food (
 -- Health Condition
 CREATE TABLE health_condition(
   user_id INT NOT NULL,
-  create_at DATETIME NOT NULL,
+  create_at DATE NOT NULL,
   weight DEC(5,2) NOT NULL,
   body_fat_percent DEC(5,2) NOT NULL,
   CONSTRAINT health_weight_chk CHECK (weight > 0),
@@ -369,7 +369,7 @@ END $$
 
 CREATE PROCEDURE sp_insert_user_health_condition(
     IN p_user_id INT,
-    IN p_create_at DATETIME,
+    IN p_create_at DATE,
     IN p_weight DECIMAL(5,2),
     IN p_body_fat_percent DECIMAL(5,2)
 )
@@ -385,7 +385,7 @@ END $$
 
 CREATE PROCEDURE sp_delete_health_condition(
     IN p_user_id INT,
-    IN p_create_at DATETIME
+    IN p_create_at DATE
 )
 BEGIN
     IF NOT EXISTS (

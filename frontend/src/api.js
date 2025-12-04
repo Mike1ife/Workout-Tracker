@@ -149,7 +149,7 @@ export const healthAPI = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        createdAt: healthData.createdAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
+        createdAt: healthData.createdAt,
         weight: healthData.weight,
         body_fat_percent: healthData.body_fat_percent
       })
@@ -242,6 +242,13 @@ export const foodAPI = {
       })
     });
     return handleResponse(response);
+  },
+  
+  deleteFood: async (foodName) => {
+  const response = await fetch(`${BASE_URL}/foods/${foodName}`, {
+    method: 'DELETE'
+  });
+  return handleResponse(response);
   },
 
   logFood: async (userId, foodName, quantity, createAt) => {
