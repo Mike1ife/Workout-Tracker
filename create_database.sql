@@ -151,7 +151,7 @@ CREATE TABLE lifting_set (
   CONSTRAINT lifting_set_num_chk CHECK (set_num >= 1),
   CONSTRAINT lifting_weight_chk CHECK (weight >= 0),
   CONSTRAINT lifting_reps_chk CHECK (reps > 0),
-  CONSTRAINT lifting_set_pk PRIMARY KEY (lifting_section_id,set_num),
+  CONSTRAINT lifting_set_pk PRIMARY KEY (lifting_section_id, set_num),
   CONSTRAINT lifting_set_section_fk FOREIGN KEY (lifting_section_id) REFERENCES lifting_section(lifting_section_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
