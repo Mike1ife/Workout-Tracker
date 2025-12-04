@@ -53,7 +53,7 @@ cd backend
 pip install -r requirements.txt
 ```
 
-3. **Change Database COnnection Configuration**
+3. **Change Database Connection Configuration**
 ```python
 # backend/config.py
 DATABASE_CONFIG = {
