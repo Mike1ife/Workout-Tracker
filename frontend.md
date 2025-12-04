@@ -40,9 +40,27 @@ A React-based web application for tracking workouts, nutrition, and health metri
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- npm or yarn
-- Backend API running on `http://localhost:8000`
+Before starting the frontend, ensure the backend is running:
+
+1. **Setup Database** (one-time setup)
+```bash
+mysql -u root -p < create_database.sql
+```
+
+2. **Install Python Dependencies**
+```bash
+cd backend
+pip install fastapi uvicorn pymysql pydantic
+```
+
+3. **Start Backend Server**
+```bash
+uvicorn main:app --reload
+```
+
+Backend should be running on `http://localhost:8000`
+
+4. **Node.js** (v14 or higher) and npm
 
 ## Installation
 
