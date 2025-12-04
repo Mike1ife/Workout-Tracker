@@ -2,14 +2,15 @@ from datetime import timedelta
 import pymysql
 from typing import List
 from fastapi import HTTPException
+from config import DATABASE_CONFIG
 
 from schema import *
 
 conn = pymysql.connect(
-    host="localhost",
-    user="root",
-    password="password1",
-    database="workout_tracker",
+    host=DATABASE_CONFIG["host"],
+    user=DATABASE_CONFIG["user"],
+    password=DATABASE_CONFIG["password"],
+    database=DATABASE_CONFIG["database"],
     cursorclass=pymysql.cursors.DictCursor,
 )
 
