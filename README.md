@@ -1,5 +1,10 @@
 # Workout Tracker
 
+## Database (MySQL)
+```
+Execute database dump file to build the workout_tracker database
+```
+
 ## Backend (FastAPI + pymysql)
 ```
 python version = 3.11
