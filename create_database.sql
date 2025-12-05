@@ -18,12 +18,13 @@ CREATE TABLE users (
 -- Food
 CREATE TABLE food (
   food_name VARCHAR(64) NOT NULL,
-  serving_size VARCHAR(64) NOT NULL DEFAULT '100g',
+  serving_size DECIMAL(7,2) NOT NULL DEFAULT 100.0,
   calories DECIMAL(7,2) AS (carbohydrate * 4 + protein * 4 + fat * 9) STORED,
-  carbohydrate DEC(5,2) NOT NULL,
-  protein DEC(5,2) NOT NULL,
-  fat DEC(5,2) NOT NULL,
+  carbohydrate DECIMAL(5,2) NOT NULL,
+  protein DECIMAL(5,2) NOT NULL,
+  fat DECIMAL(5,2) NOT NULL,
   CONSTRAINT food_carbohydrate_chk CHECK (carbohydrate >= 0),
+  CONSTRAINT food_serving_size_chk CHECK (serving_size >= 0),
   CONSTRAINT food_protein_chk CHECK (protein >= 0),
   CONSTRAINT food_fat_chk CHECK (fat >= 0),
   CONSTRAINT food_pk PRIMARY KEY (food_name)
@@ -47,8 +48,8 @@ CREATE TABLE user_food (
 CREATE TABLE health_condition(
   user_id INT NOT NULL,
   create_at DATE NOT NULL,
-  weight DEC(5,2) NOT NULL,
-  body_fat_percent DEC(5,2) NOT NULL,
+  weight DECIMAL(5,2) NOT NULL,
+  body_fat_percent DECIMAL(5,2) NOT NULL,
   CONSTRAINT health_weight_chk CHECK (weight > 0),
   CONSTRAINT health_body_fat_chk CHECK (body_fat_percent >= 0 AND body_fat_percent <= 100),
   CONSTRAINT health_condition_pk PRIMARY KEY(user_id, create_at),
@@ -182,7 +183,7 @@ CREATE TABLE metric (
   metric_id INT AUTO_INCREMENT,
   aerobics_section_id INT NOT NULL,
   duration TIME,
-  distance DEC(6,2),
+  distance DECIMAL(6,2),
   CONSTRAINT metric_distance_chk CHECK (distance IS NULL OR distance > 0),
   CONSTRAINT metric_pk PRIMARY KEY (metric_id),
   CONSTRAINT metric_section_fk FOREIGN KEY (aerobics_section_id) REFERENCES aerobics_section(aerobics_section_id)
@@ -291,7 +292,7 @@ END $$
 
 CREATE PROCEDURE sp_insert_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(64),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -346,7 +347,7 @@ END $$
 
 CREATE PROCEDURE sp_update_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(64),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
