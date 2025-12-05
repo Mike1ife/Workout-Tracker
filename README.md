@@ -49,7 +49,6 @@ mysql -u root -p < workout_tracker_dump.sql
 
 2. **Install Python Dependencies**
 ```bash
-cd backend
 pip install -r requirements.txt
 ```
 
@@ -67,6 +66,7 @@ DATABASE_CONFIG = {
 
 4. **Start Backend Server**
 ```bash
+cd backend
 uvicorn main:app --reload
 ```
 

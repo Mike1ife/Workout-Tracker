@@ -161,8 +161,7 @@ CREATE TABLE `food` (
   PRIMARY KEY (`food_name`),
   CONSTRAINT `food_carbohydrate_chk` CHECK ((`carbohydrate` >= 0)),
   CONSTRAINT `food_fat_chk` CHECK ((`fat` >= 0)),
-  CONSTRAINT `food_protein_chk` CHECK ((`protein` >= 0)),
-  CONSTRAINT `food_serving_size_chk` CHECK ((`serving_size` >= 0))
+  CONSTRAINT `food_protein_chk` CHECK ((`protein` >= 0))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -201,7 +200,6 @@ CREATE TABLE `health_condition` (
 
 LOCK TABLES `health_condition` WRITE;
 /*!40000 ALTER TABLE `health_condition` DISABLE KEYS */;
-INSERT INTO `health_condition` VALUES (1,'2025-12-03',123.00,12.00),(1,'2025-12-06',12.00,12.00);
 /*!40000 ALTER TABLE `health_condition` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -272,7 +270,7 @@ CREATE TABLE `lifting_section` (
   KEY `lifting_section_lifting_fk` (`exercise_name`),
   CONSTRAINT `lifting_section_fk` FOREIGN KEY (`session_id`) REFERENCES `user_session` (`session_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `lifting_section_lifting_fk` FOREIGN KEY (`exercise_name`) REFERENCES `lifting` (`exercise_name`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -417,7 +415,6 @@ CREATE TABLE `user_food` (
 
 LOCK TABLES `user_food` WRITE;
 /*!40000 ALTER TABLE `user_food` DISABLE KEYS */;
-INSERT INTO `user_food` VALUES (1,'Eggs',600.00,'2025-12-04 23:43:55'),(1,'Eggs',4.50,'2025-12-05 23:42:20'),(1,'Greek Yogurt',3.00,'2025-12-04 23:44:07'),(1,'Oatmeal',4.50,'2025-12-04 23:43:40'),(1,'Quinoa',2.50,'2025-12-01 23:42:47');
 /*!40000 ALTER TABLE `user_food` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -438,7 +435,7 @@ CREATE TABLE `user_session` (
   UNIQUE KEY `session_ak` (`user_id`,`start_time`,`end_time`),
   CONSTRAINT `session_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `session_time_chk` CHECK ((`end_time` > `start_time`))
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -447,7 +444,6 @@ CREATE TABLE `user_session` (
 
 LOCK TABLES `user_session` WRITE;
 /*!40000 ALTER TABLE `user_session` DISABLE KEYS */;
-INSERT INTO `user_session` VALUES (1,1,'2025-12-04 23:57:00','2025-12-04 23:58:00','');
 /*!40000 ALTER TABLE `user_session` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -478,7 +474,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Mike','Tai','yitai77@gmail.com','daiguangyi123',24,'Male');
+INSERT INTO `users` VALUES (1,'Mike','Tai','yitai77@gmail.com','daiguangyi123',23,'Male');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1156,7 +1152,6 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_fetch_liftings_by_muscle_name`(IN p_muscle_name VARCHAR(64))
 BEGIN
-    -- Muscle must exist
     IF NOT EXISTS (
         SELECT 1 FROM muscle WHERE muscle_name = p_muscle_name
     ) THEN
@@ -1404,6 +1399,16 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
+    -- Check if metric already exists
+    IF EXISTS (
+        SELECT 1 FROM metric
+        WHERE aerobics_section_id = p_section_id
+          AND metric_num = p_metric_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Metric with this number already exists for this section';
+    END IF;
+
     INSERT INTO metric (aerobics_section_id, metric_num, duration, distance)
     VALUES (p_section_id, p_metric_num, p_duration, p_distance);
 END ;;
@@ -1494,6 +1499,16 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Lifting Section does not exist';
+    END IF;
+
+    -- Check if set already exists
+    IF EXISTS (
+        SELECT 1 FROM lifting_set
+        WHERE lifting_section_id = p_section_id
+          AND set_num = p_set_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Set with this number already exists for this section';
     END IF;
 
     INSERT INTO lifting_set (lifting_section_id, set_num, weight, reps)
@@ -1823,4 +1838,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-05  0:04:02
+-- Dump completed on 2025-12-05 18:22:50
