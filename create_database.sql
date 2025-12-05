@@ -18,7 +18,7 @@ CREATE TABLE users (
 -- Food
 CREATE TABLE food (
   food_name VARCHAR(64) NOT NULL,
-  serving_size VARCHAR(20) NOT NULL DEFAULT '100g',
+  serving_size DECIMAL(7,2) NOT NULL DEFAULT 100.00,
   calories DECIMAL(7,2) AS (carbohydrate * 4 + protein * 4 + fat * 9) STORED,
   carbohydrate DECIMAL(5,2) NOT NULL,
   protein DECIMAL(5,2) NOT NULL,
@@ -292,7 +292,7 @@ END $$
 
 CREATE PROCEDURE sp_insert_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(20),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -347,7 +347,7 @@ END $$
 
 CREATE PROCEDURE sp_update_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(20),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -913,21 +913,21 @@ DELIMITER ;
 -- Foods (All normalized to 100g)
 INSERT INTO food (food_name, serving_size, carbohydrate, protein, fat)
 VALUES
-('Chicken Breast', 100.0, 0, 31, 3.6),
-('Brown Rice', 100.0, 23, 2.5, 0.9),
-('Broccoli', 100.0, 7, 2.8, 0.4),
-('Salmon', 100.0, 0, 25, 8.5),
-('Sweet Potato', 100.0, 20, 2, 0.2),
-('Eggs', 100.0, 0.7, 13, 9.5),
-('Oatmeal', 100.0, 12, 2.5, 1.5),
-('Banana', 100.0, 23, 1.1, 0.3),
-('Almonds', 100.0, 22, 21, 49),
-('Greek Yogurt', 100.0, 3.6, 10, 0.4),
-('Avocado', 100.0, 9, 2, 15),
-('Spinach', 100.0, 3.6, 2.9, 0.4),
-('Quinoa', 100.0, 21, 4.4, 1.9),
-('Tuna', 100.0, 0, 26, 0.8),
-('Whole Wheat Bread', 100.0, 41, 13, 3.4);
+('Chicken Breast', 100.00, 0, 31, 3.6),
+('Brown Rice', 100.00, 23, 2.5, 0.9),
+('Broccoli', 100.00, 7, 2.8, 0.4),
+('Salmon', 100.00, 0, 25, 8.5),
+('Sweet Potato', 100.00, 20, 2, 0.2),
+('Eggs', 100.00, 0.7, 13, 9.5),
+('Oatmeal', 100.00, 12, 2.5, 1.5),
+('Banana', 100.00, 23, 1.1, 0.3),
+('Almonds', 100.00, 22, 21, 49),
+('Greek Yogurt', 100.00, 3.6, 10, 0.4),
+('Avocado', 100.00, 9, 2, 15),
+('Spinach', 100.00, 3.6, 2.9, 0.4),
+('Quinoa', 100.00, 21, 4.4, 1.9),
+('Tuna', 100.00, 0, 26, 0.8),
+('Whole Wheat Bread', 100.00, 41, 13, 3.4);
 
 -- Exercises
 INSERT INTO exercise (exercise_name, description)

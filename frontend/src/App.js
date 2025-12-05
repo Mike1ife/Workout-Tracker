@@ -1723,7 +1723,7 @@ const Dashboard = () => {
   const EditFoodForm = () => {
     const [formData, setFormData] = useState({
       foodName: editingFood.foodName,
-      servingSize: editingFood.servingSize || '100g',
+      servingSize: editingFood.servingSize || '100',
       carbohydrate: editingFood.carbohydrate,
       protein: editingFood.protein,
       fat: editingFood.fat
@@ -1991,7 +1991,7 @@ const Dashboard = () => {
                     </button>
                   </div>
                   <p className="quantity-hint">
-                    = {(quantity * (getSelectedFoodData().servingSize === '100g' ? 100 : 1)).toFixed(0)}g total
+                    = {(quantity * (getSelectedFoodData().servingSize || 100)).toFixed(0)}g total
                   </p>
                 </div>
 
@@ -2024,7 +2024,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <p className="quantity-summary">
-                    {quantity} × {getSelectedFoodData().servingSize || '100g'} serving
+                    {quantity} × {getSelectedFoodData().servingSize || '100'}g serving
                   </p>
                 </div>
               </>
