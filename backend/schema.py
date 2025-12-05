@@ -71,5 +71,6 @@ class Set(BaseModel):
 
 
 class Metric(BaseModel):
+    metricNum: int
     duration: Optional[str] = None
     distance: Optional[float] = None

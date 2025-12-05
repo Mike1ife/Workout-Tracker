@@ -1,7 +1,7 @@
 DATABASE_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "daiguangyi123",
+    "password": "password1",
     "database": "workout_tracker",
     "cursorclass": "DictCursor",
 }

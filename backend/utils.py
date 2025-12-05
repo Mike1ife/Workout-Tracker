@@ -326,12 +326,12 @@ def fetch_aerobics_by_name(aerobicsName: str) -> dict:
 def insert_aerobics_section_metric(sectionId: int, metric: Metric):
     _call_proc(
         "sp_insert_aerobics_section_metric",
-        (sectionId, metric.duration, metric.distance),
+        (sectionId, metric.metricNum, metric.duration, metric.distance), 
     )
 
 
 def fetch_aerobics_section_metric(sectionId: int) -> List[Metric]:
-    rows = _call_proc("sp_fetch_aerobics_section_metric", (sectionId,))
+    rows = _call_proc("sp_fetch_aerobics_section_metrics", (sectionId,)) 
     result = []
 
     for row in rows:
@@ -347,20 +347,24 @@ def fetch_aerobics_section_metric(sectionId: int) -> List[Metric]:
             else:
                 duration_str = str(duration)
 
-        result.append(Metric(duration=duration_str, distance=row.get("distance")))
+        result.append(Metric(
+            metricNum=row["metric_num"],  
+            duration=duration_str, 
+            distance=row.get("distance")
+        ))
     
     return result
 
 
-def update_aerobics_section_metric(metricId: int, metric: Metric):
+def update_aerobics_section_metric(sectionId: int, metricNum: int, metric: Metric):
     _call_proc(
         "sp_update_aerobics_section_metric",
-        (metricId, metric.duration, metric.distance),
+        (sectionId, metricNum, metric.duration, metric.distance), 
     )
 
 
-def delete_aerobics_section_metric(metricId: int):
-    _call_proc("sp_delete_aerobics_section_metric", (metricId,))
+def delete_aerobics_section_metric(sectionId: int, metricNum: int):
+    _call_proc("sp_delete_aerobics_section_metric", (sectionId, metricNum))
 
 
 def fetch_liftings() -> List[dict]:
@@ -470,20 +474,3 @@ def get_aerobics_section_id(sessionId: int, exerciseName: str) -> int:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-
-def get_aerobics_metric_id(sessionId: int, exerciseName: str) -> int:
-    try:
-        section_id = get_aerobics_section_id(sessionId, exerciseName)
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT metric_id FROM metric WHERE aerobics_section_id = %s LIMIT 1",
-                (section_id,)
-            )
-            result = cursor.fetchone()
-            if not result:
-                raise HTTPException(status_code=404, detail="Metric not found")
-            return result['metric_id']
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

@@ -180,12 +180,13 @@ CREATE TABLE aerobics_section(
 
 -- Metric (with optional fields for aerobics)
 CREATE TABLE metric (
-  metric_id INT AUTO_INCREMENT,
   aerobics_section_id INT NOT NULL,
+  metric_num INT NOT NULL,
   duration TIME,
   distance DECIMAL(6,2),
+  CONSTRAINT metric_num_chk CHECK (metric_num >= 1),
   CONSTRAINT metric_distance_chk CHECK (distance IS NULL OR distance > 0),
-  CONSTRAINT metric_pk PRIMARY KEY (metric_id),
+  CONSTRAINT metric_pk PRIMARY KEY (aerobics_section_id, metric_num),
   CONSTRAINT metric_section_fk FOREIGN KEY (aerobics_section_id) REFERENCES aerobics_section(aerobics_section_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -650,7 +651,8 @@ END $$
 
 CREATE PROCEDURE sp_insert_aerobics_section_metric(
     IN p_section_id INT,
-    IN p_duration VARCHAR(64),
+    IN p_metric_num INT,
+    IN p_duration TIME,
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
@@ -662,11 +664,11 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
-    INSERT INTO metric (aerobics_section_id, duration, distance)
-    VALUES (p_section_id, p_duration, p_distance);
+    INSERT INTO metric (aerobics_section_id, metric_num, duration, distance)
+    VALUES (p_section_id, p_metric_num, p_duration, p_distance);
 END $$
 
-CREATE PROCEDURE sp_fetch_aerobics_section_metric(
+CREATE PROCEDURE sp_fetch_aerobics_section_metrics(
     IN p_section_id INT
 )
 BEGIN
@@ -678,20 +680,23 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
-    SELECT duration, distance
+    SELECT *
     FROM metric
-    WHERE aerobics_section_id = p_section_id;
+    WHERE aerobics_section_id = p_section_id
+    ORDER BY metric_num;
 END $$
 
 CREATE PROCEDURE sp_update_aerobics_section_metric(
-    IN p_metric_id INT,
-    IN p_duration VARCHAR(64),
+    IN p_section_id INT,
+    IN p_metric_num INT,
+    IN p_duration TIME,
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM metric
-        WHERE metric_id = p_metric_id
+        WHERE aerobics_section_id = p_section_id 
+            AND metric_num = p_metric_num
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
@@ -700,23 +705,27 @@ BEGIN
     UPDATE metric
     SET duration = p_duration,
         distance = p_distance
-    WHERE metric_id = p_metric_id;
+    WHERE aerobics_section_id = p_section_id 
+        AND metric_num = p_metric_num;
 END $$
 
 CREATE PROCEDURE sp_delete_aerobics_section_metric(
-    IN p_metric_id INT
+    IN p_section_id INT,
+    IN p_metric_num INT
 )
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM metric
-        WHERE metric_id = p_metric_id
+        WHERE aerobics_section_id = p_section_id 
+            AND metric_num = p_metric_num
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
     END IF;
 
     DELETE FROM metric
-    WHERE metric_id = p_metric_id;
+    WHERE aerobics_section_id = p_section_id 
+        AND metric_num = p_metric_num;
 END $$
 
 CREATE PROCEDURE sp_fetch_liftings()

@@ -204,6 +204,8 @@ const Dashboard = () => {
   const [liftingExercises, setLiftingExercises] = useState([]);
   const [aerobicExercises, setAerobicExercises] = useState([]);
   const [exerciseFilter, setExerciseFilter] = useState('all');
+  const [muscleGroupFilter, setMuscleGroupFilter] = useState('all');
+  const [equipmentFilter, setEquipmentFilter] = useState('all');
   const [foods, setFoods] = useState([]);
   const [userFoods, setUserFoods] = useState([]);
   const [showNewFood, setShowNewFood] = useState(false);
@@ -218,6 +220,9 @@ const Dashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [showAddSet, setShowAddSet] = useState(false);
+  const [showEditSet, setShowEditSet] = useState(false);
+  const [editingSet, setEditingSet] = useState(null);
+  const [editingSetExercise, setEditingSetExercise] = useState(null);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [exerciseRefreshKey, setExerciseRefreshKey] = useState(0);
@@ -228,6 +233,49 @@ const Dashboard = () => {
   const [selectedAerobicExercise, setSelectedAerobicExercise] = useState(null);
   const [exerciseMuscles, setExerciseMuscles] = useState({});
   const [exerciseEquipment, setExerciseEquipment] = useState({});
+
+  const uniqueMuscleGroups = ['All', 'Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'];
+
+  const uniqueEquipment = React.useMemo(() => {
+    const equipment = new Set();
+    Object.values(exerciseEquipment).forEach(items => {
+      items.forEach(eq => equipment.add(eq.equipmentName));
+    });
+    return ['All', ...Array.from(equipment).sort()];
+  }, [exerciseEquipment]);
+
+  const getFilteredExercises = () => {
+    let filtered = exerciseFilter === 'all' ? exercises : 
+                  exerciseFilter === 'lifting' ? liftingExercises : 
+                  aerobicExercises;
+    
+    if (muscleGroupFilter !== 'all' && muscleGroupFilter !== 'All') {
+      filtered = filtered.filter(exercise => {
+        const muscles = exerciseMuscles[exercise.exerciseName] || [];
+        return muscles.some(muscle => {
+          const muscleName = muscle.muscleName.toLowerCase();
+          const filterLower = muscleGroupFilter.toLowerCase();
+          
+          if (filterLower === 'chest') return muscleName.includes('pectoral');
+          if (filterLower === 'back') return muscleName.includes('lat') || muscleName.includes('trapezius') || muscleName.includes('rhomboid');
+          if (filterLower === 'shoulders') return muscleName.includes('deltoid');
+          if (filterLower === 'arms') return muscleName.includes('biceps') || muscleName.includes('triceps') || muscleName.includes('brachialis');
+          if (filterLower === 'legs') return muscleName.includes('femoris') || muscleName.includes('vastus') || muscleName.includes('gastrocnemius') || muscleName.includes('soleus');
+          if (filterLower === 'core') return muscleName.includes('abdominis') || muscleName.includes('oblique') || muscleName.includes('erector');
+          return false;
+        });
+      });
+    }
+    
+    if (equipmentFilter !== 'all' && equipmentFilter !== 'All') {
+      filtered = filtered.filter(exercise => {
+        const equipment = exerciseEquipment[exercise.exerciseName] || [];
+        return equipment.some(eq => eq.equipmentName === equipmentFilter);
+      });
+    }
+    
+    return filtered;
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('workout_tracker_user');
@@ -566,11 +614,23 @@ const Dashboard = () => {
   };
 
   const EditSessionForm = () => {
+    const parseDateTime = (datetime) => {
+      if (!datetime) return { date: '', time: '' };
+      const dateStr = datetime.includes('T') ? datetime.split('T')[0] : datetime.split(' ')[0];
+      const timeStr = datetime.includes('T') 
+        ? datetime.split('T')[1]?.substring(0, 5) 
+        : datetime.split(' ')[1]?.substring(0, 5);
+      return { date: dateStr || '', time: timeStr || '' };
+    };
+
+    const startParsed = parseDateTime(editingSession.startTime);
+    const endParsed = parseDateTime(editingSession.endTime);
+
     const [formData, setFormData] = useState({
-      start_date: editingSession.startTime.split('T')[0] || editingSession.startTime.split(' ')[0],
-      start_time: editingSession.startTime.split('T')[1]?.substring(0, 5) || editingSession.startTime.split(' ')[1]?.substring(0, 5),
-      end_date: editingSession.endTime.split('T')[0] || editingSession.endTime.split(' ')[0],
-      end_time: editingSession.endTime.split('T')[1]?.substring(0, 5) || editingSession.endTime.split(' ')[1]?.substring(0, 5),
+      start_date: startParsed.date,
+      start_time: startParsed.time,
+      end_date: endParsed.date,
+      end_time: endParsed.time,
       note: editingSession.note || ''
     });
 
@@ -839,28 +899,13 @@ const Dashboard = () => {
 
   const AddSetForm = () => {
     const [formData, setFormData] = useState({
-      setNum: 1,
+      setNum: '',
       weight: '',
       reps: ''
     });
 
-    useEffect(() => {
-      const fetchNextSetNum = async () => {
-        if (selectedExercise) {
-          try {
-            const sets = await api.lifting.getSets(selectedExercise.exerciseName, selectedSession.session_id);
-            const maxSetNum = sets.length > 0 ? Math.max(...sets.map(s => s.setNum)) : 0;
-            setFormData(prev => ({...prev, setNum: maxSetNum + 1}));
-          } catch (err) {
-            console.error('Error fetching sets:', err);
-          }
-        }
-      };
-      fetchNextSetNum();
-    }, [selectedExercise]);
-
     const handleSubmit = async () => {
-      if (!formData.weight || !formData.reps) {
+      if (!formData.setNum || !formData.weight || !formData.reps) {
         alert('Please fill in all fields');
         return;
       }
@@ -938,6 +983,131 @@ const Dashboard = () => {
     );
   };
 
+  const EditSetForm = () => {
+    const originalSetNum = useRef(editingSet?.setNum);
+    
+    const [formData, setFormData] = useState({
+      setNum: editingSet?.setNum || 1,
+      weight: editingSet?.weight || '',
+      reps: editingSet?.reps || ''
+    });
+
+    const handleSubmit = async () => {
+      if (!formData.setNum || !formData.weight || !formData.reps) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      try {
+        await api.lifting.updateSet(
+          editingSetExercise.exerciseName,
+          selectedSession.session_id,
+          originalSetNum.current,
+          {
+            setNum: parseInt(formData.setNum),
+            weight: parseFloat(formData.weight),
+            reps: parseInt(formData.reps)
+          }
+        );
+        setShowEditSet(false);
+        setEditingSet(null);
+        setEditingSetExercise(null);
+        setSetRefreshTrigger(prev => prev + 1);
+        alert('Set updated successfully!');
+      } catch (err) {
+        alert('Error updating set: ' + err.message);
+      }
+    };
+
+    const handleDelete = async () => {
+      if (!window.confirm('Are you sure you want to delete this set?')) {
+        return;
+      }
+
+      try {
+        await api.lifting.deleteSet(
+          editingSetExercise.exerciseName,
+          selectedSession.session_id,
+          originalSetNum.current
+        );
+        setShowEditSet(false);
+        setEditingSet(null);
+        setEditingSetExercise(null);
+        setSetRefreshTrigger(prev => prev + 1);
+        alert('Set deleted successfully!');
+      } catch (err) {
+        alert('Error deleting set: ' + err.message);
+      }
+    };
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <div className="modal-title-row">
+            <h3 className="modal-title">Edit Set - {editingSetExercise?.exerciseName}</h3>
+            <button
+              onClick={handleDelete}
+              className="btn-delete"
+              title="Delete set"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+          
+          <div className="form-container">
+            <div className="form-group">
+              <label className="form-label">Set Number</label>
+              <input 
+                type="number" 
+                value={formData.setNum}
+                onChange={(e) => setFormData({...formData, setNum: e.target.value})}
+                className="form-input"
+                min="1"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Weight (lbs)</label>
+                <input 
+                  type="number" 
+                  step="2.5"
+                  value={formData.weight}
+                  onChange={(e) => setFormData({...formData, weight: e.target.value})}
+                  className="form-input"
+                  placeholder="135"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Reps</label>
+                <input 
+                  type="number" 
+                  value={formData.reps}
+                  onChange={(e) => setFormData({...formData, reps: e.target.value})}
+                  className="form-input"
+                  placeholder="10"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="modal-buttons">
+            <button onClick={() => {
+              setShowEditSet(false);
+              setEditingSet(null);
+              setEditingSetExercise(null);
+            }} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleSubmit} className="btn-primary">
+              Update Set
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const SessionDetailView = () => {
     const [exerciseSets, setExerciseSets] = useState({});
     const [aerobicMetrics, setAerobicMetrics] = useState({});
@@ -1006,13 +1176,13 @@ const Dashboard = () => {
             const metrics = await api.aerobic.getMetrics(exerciseName, selectedSession.session_id);
             setAerobicMetrics(prev => ({
               ...prev,
-              [exerciseName]: metrics.length > 0 ? metrics[0] : null
+              [exerciseName]: metrics
             }));
           } catch (err) {
             console.error('Error fetching aerobic metrics:', err);
             setAerobicMetrics(prev => ({
               ...prev,
-              [exerciseName]: null
+              [exerciseName]: []
             }));
           }
         }
@@ -1060,7 +1230,10 @@ const Dashboard = () => {
           }
         } else if (isAerobicExercise) {
           try {
-            await api.aerobic.deleteMetric(exerciseName, selectedSession.session_id);
+            const metrics = await api.aerobic.getMetrics(exerciseName, selectedSession.session_id);
+            for (const metric of metrics) {
+              await api.aerobic.deleteMetric(exerciseName, selectedSession.session_id, metric.metricNum);
+            }
           } catch (err) {
             console.log('No metrics to delete or error deleting metrics:', err);
           }
@@ -1194,19 +1367,25 @@ const Dashboard = () => {
                       <div className="exercise-detail-content">
                         {isAerobic ? (
                           <div className="aerobics-metrics">
-                            <div className="metric-item">
-                              <span className="metric-label">Duration</span>
-                              <span className="metric-value">
-                                {aerobicMetrics[exercise.exerciseName]?.duration || '--:--'}
-                              </span>
-                            </div>
-                            <div className="metric-item">
-                              <span className="metric-label">Distance</span>
-                              <span className="metric-value">
-                                {aerobicMetrics[exercise.exerciseName]?.distance ? 
-                                  `${aerobicMetrics[exercise.exerciseName].distance} mi` : '-- mi'}
-                              </span>
-                            </div>
+                            {aerobicMetrics[exercise.exerciseName] && aerobicMetrics[exercise.exerciseName].length > 0 ? (
+                              aerobicMetrics[exercise.exerciseName].map((metric, idx) => (
+                                <div key={idx} className="sets-table-row">
+                                  <span>#{metric.metricNum}</span>
+                                  <div className="metric-item">
+                                    <span className="metric-label">Duration</span>
+                                    <span className="metric-value">{metric.duration || '--:--'}</span>
+                                  </div>
+                                  <div className="metric-item">
+                                    <span className="metric-label">Distance</span>
+                                    <span className="metric-value">
+                                      {metric.distance ? `${metric.distance} mi` : '-- mi'}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="no-data">No metrics added yet</p>
+                            )}
                           </div>
                         ) : (
                           <div className="sets-table">
@@ -1222,12 +1401,28 @@ const Dashboard = () => {
                                   <span>Set {set.setNum}</span>
                                   <span>{set.weight} lbs</span>
                                   <span>{set.reps} reps</span>
-                                  <button 
-                                    onClick={() => handleDeleteSet(exercise.exerciseName, set.setNum)}
-                                    className="btn-delete"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
+                                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                      onClick={() => {
+                                        setEditingSet(set);
+                                        setEditingSetExercise(exercise);
+                                        setShowEditSet(true);
+                                      }}
+                                      className="btn-secondary btn-icon-only"
+                                      title="Edit set"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                      </svg>
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteSet(exercise.exerciseName, set.setNum)}
+                                      className="btn-delete"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
                                 </div>
                               ))
                             ) : (
@@ -1415,13 +1610,18 @@ const Dashboard = () => {
             
             <div className="form-group">
               <label className="form-label">Serving Size</label>
-              <input 
-                type="text" 
-                value={formData.servingSize}
-                onChange={(e) => setFormData({...formData, servingSize: e.target.value})}
-                className="form-input"
-                placeholder="100g"
-              />
+              <div className="input-with-suffix">
+                <input 
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={formData.servingSize.replace('g', '')}
+                  onChange={(e) => setFormData({...formData, servingSize: e.target.value + 'g'})}
+                  className="form-input"
+                  placeholder="100"
+                />
+                <span className="input-suffix">g</span>
+              </div>
               <p className="form-hint">
                 All macros should be per this serving size (we recommend 100g)
               </p>
@@ -1565,13 +1765,18 @@ const Dashboard = () => {
             
             <div className="form-group">
               <label className="form-label">Serving Size</label>
-              <input 
-                type="text" 
-                value={formData.servingSize}
-                onChange={(e) => setFormData({...formData, servingSize: e.target.value})}
-                className="form-input"
-                placeholder="100g"
-              />
+              <div className="input-with-suffix">
+                <input 
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={formData.servingSize.replace('g', '')}
+                  onChange={(e) => setFormData({...formData, servingSize: e.target.value + 'g'})}
+                  className="form-input"
+                  placeholder="100"
+                />
+                <span className="input-suffix">g</span>
+              </div>
               <p className="form-hint">
                 All macros should be per this serving size
               </p>
@@ -1607,8 +1812,7 @@ const Dashboard = () => {
                 value={formData.fat}
                 onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
-                placeholder="5.5"
-              />
+                placeholder="5.5"/>
             </div>
 
             {(formData.carbohydrate || formData.protein || formData.fat) && (
@@ -1737,7 +1941,7 @@ const Dashboard = () => {
                       className="form-input quantity-input"
                     />
                     {quantity !== '' && parseFloat(quantity) <= 0 && (
-                      <p className="form-hint" style={{ color: '#dc2626' }}>
+                      <p className="form-hint error-hint">
                         Quantity must be greater than 0
                       </p>
                     )}
@@ -1942,7 +2146,7 @@ const Dashboard = () => {
                 </button>
               </div>
               {quantity !== '' && parseFloat(quantity) <= 0 && (
-                <p className="form-hint" style={{ color: '#dc2626' }}>
+                <p className="form-hint error-hint">
                   Quantity must be greater than 0
                 </p>
               )}
@@ -1997,10 +2201,11 @@ const Dashboard = () => {
   
   const AddAerobicMetricForm = () => {
     const [formData, setFormData] = useState({
+      metricNum: '', 
       duration: '',
       distance: ''
     });
-    const [existingMetrics, setExistingMetrics] = useState(null);
+    const [existingMetrics, setExistingMetrics] = useState([]);
 
     useEffect(() => {
       const fetchExisting = async () => {
@@ -2010,15 +2215,10 @@ const Dashboard = () => {
               selectedAerobicExercise.exerciseName,
               selectedSession.session_id
             );
-            if (metrics.length > 0) {
-              setExistingMetrics(metrics[0]);
-              setFormData({
-                duration: metrics[0].duration || '',
-                distance: metrics[0].distance || ''
-              });
-            }
+            setExistingMetrics(metrics);
           } catch (err) {
             console.error('Error fetching existing metrics:', err);
+            setExistingMetrics([]);
           }
         }
       };
@@ -2026,17 +2226,26 @@ const Dashboard = () => {
     }, [selectedAerobicExercise]);
     
     const handleSubmit = async () => {
+      if (!formData.metricNum) {
+        alert('Please provide a metric number');
+        return;
+      }
+
       if (!formData.duration && !formData.distance) {
         alert('Please fill in at least one field (duration or distance)');
         return;
       }
 
       try {
-        if (existingMetrics) {
+        const existingMetric = existingMetrics.find(m => m.metricNum === parseInt(formData.metricNum));
+        
+        if (existingMetric) {
           await api.aerobic.updateMetric(
             selectedAerobicExercise.exerciseName,
             selectedSession.session_id,
+            parseInt(formData.metricNum),
             {
+              metricNum: parseInt(formData.metricNum),
               duration: formData.duration || null,
               distance: formData.distance ? parseFloat(formData.distance) : null
             }
@@ -2046,11 +2255,13 @@ const Dashboard = () => {
             selectedAerobicExercise.exerciseName,
             selectedSession.session_id,
             {
+              metricNum: parseInt(formData.metricNum),
               duration: formData.duration || null,
               distance: formData.distance ? parseFloat(formData.distance) : null
             }
           );
         }
+        
         setShowAddAerobicMetric(false);
         setExerciseRefreshKey(prev => prev + 1);
         alert('Metrics saved successfully!');
@@ -2059,14 +2270,69 @@ const Dashboard = () => {
       }
     };
 
+    const handleDelete = async () => {
+      if (!formData.metricNum) {
+        alert('Please select a metric number to delete');
+        return;
+      }
+
+      if (!window.confirm('Are you sure you want to delete this metric?')) {
+        return;
+      }
+
+      try {
+        await api.aerobic.deleteMetric(
+          selectedAerobicExercise.exerciseName,
+          selectedSession.session_id,
+          parseInt(formData.metricNum)
+        );
+        setShowAddAerobicMetric(false);
+        setExerciseRefreshKey(prev => prev + 1);
+        alert('Metric deleted successfully!');
+      } catch (err) {
+        alert('Error deleting metric: ' + err.message);
+      }
+    };
+
     return (
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">
-            {existingMetrics ? 'Edit' : 'Add'} Metrics - {selectedAerobicExercise?.exerciseName}
+            Manage Metrics - {selectedAerobicExercise?.exerciseName}
           </h3>
           
           <div className="form-container">
+            <div className="form-group">
+              <label className="form-label">Metric Number</label>
+              <input 
+                type="number" 
+                value={formData.metricNum}
+                onChange={(e) => {
+                  const metricNum = e.target.value;
+                  setFormData({...formData, metricNum});
+                  
+                  if (metricNum) {
+                    const existing = existingMetrics.find(m => m.metricNum === parseInt(metricNum));
+                    if (existing) {
+                      setFormData({
+                        metricNum,
+                        duration: existing.duration || '',
+                        distance: existing.distance || ''
+                      });
+                    }
+                  }
+                }}
+                className="form-input"
+                min="1"
+                placeholder="1"
+              />
+              <p className="form-hint">
+                {existingMetrics.length > 0 && (
+                  <>Existing metrics: {existingMetrics.map(m => m.metricNum).join(', ')}</>
+                )}
+              </p>
+            </div>
+
             <div className="form-group">
               <label className="form-label">Duration (HH:MM:SS)</label>
               <input 
@@ -2091,11 +2357,22 @@ const Dashboard = () => {
           </div>
           
           <div className="modal-buttons">
+            {formData.metricNum && existingMetrics.some(m => m.metricNum === parseInt(formData.metricNum)) && (
+              <button 
+                onClick={handleDelete}
+                className="btn-delete"
+                style={{ marginRight: 'auto' }}
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
+            )}
             <button onClick={() => setShowAddAerobicMetric(false)} className="btn-secondary">
               Cancel
             </button>
             <button onClick={handleSubmit} className="btn-primary">
-              {existingMetrics ? 'Update' : 'Add'} Metrics
+              {formData.metricNum && existingMetrics.some(m => m.metricNum === parseInt(formData.metricNum)) 
+                ? 'Update' : 'Add'} Metric
             </button>
           </div>
         </div>
@@ -2231,6 +2508,10 @@ const Dashboard = () => {
           <div>
             <div className="section-header">
               <h2 className="page-title">Exercise Library</h2>
+            </div>
+            
+            <div className="exercise-filter-group">
+              <div className="filter-group-label">Exercise Type:</div>
               <div className="filter-buttons">
                 <button 
                   onClick={() => setExerciseFilter('all')}
@@ -2253,10 +2534,40 @@ const Dashboard = () => {
               </div>
             </div>
             
+            {exerciseFilter !== 'aerobics' && (
+              <div className="exercise-filter-group">
+                <div className="filter-group-label">Target Muscle Group:</div>
+                <div className="filter-buttons">
+                  {uniqueMuscleGroups.map(group => (
+                    <button
+                      key={group}
+                      onClick={() => setMuscleGroupFilter(group.toLowerCase())}
+                      className={muscleGroupFilter === group.toLowerCase() ? 'filter-btn filter-btn-active' : 'filter-btn'}
+                    >
+                      {group}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="exercise-filter-group">
+              <div className="filter-group-label">Equipment Available:</div>
+              <select
+                value={equipmentFilter}
+                onChange={(e) => setEquipmentFilter(e.target.value)}
+                className="form-input equipment-select"
+              >
+                {uniqueEquipment.map(eq => (
+                  <option key={eq} value={eq}>
+                    {eq}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             <div className="exercise-grid">
-              {(exerciseFilter === 'all' ? exercises : 
-                exerciseFilter === 'lifting' ? liftingExercises : 
-                aerobicExercises).map((exercise, i) => {
+              {getFilteredExercises().map((exercise, i) => {
                 const isAerobic = aerobicExercises.some(e => e.exerciseName === exercise.exerciseName);
                 const muscles = !isAerobic ? exerciseMuscles[exercise.exerciseName] || [] : [];
                 const equipment = exerciseEquipment[exercise.exerciseName] || [];
@@ -2297,16 +2608,11 @@ const Dashboard = () => {
                       <div className="exercise-muscles">
                         <div className="muscles-label">Target Muscles:</div>
                         <div className="muscles-tags">
-                          {muscles.slice(0, 3).map((muscle, idx) => (
+                          {muscles.map((muscle, idx) => (
                             <span key={idx} className="muscle-tag">
                               {muscle.muscleName}
                             </span>
                           ))}
-                          {muscles.length > 3 && (
-                            <span className="muscle-tag muscle-tag-more">
-                              +{muscles.length - 3} more
-                            </span>
-                          )}
                         </div>
                       </div>
                     )}
@@ -2315,14 +2621,11 @@ const Dashboard = () => {
               })}
             </div>
             
-            {(exerciseFilter === 'all' ? exercises : 
-              exerciseFilter === 'lifting' ? liftingExercises : 
-              aerobicExercises).length === 0 && (
-              <p className="no-data">No exercises found</p>
+            {getFilteredExercises().length === 0 && (
+              <p className="no-data">No exercises found matching your filters</p>
             )}
           </div>
         )}
-
         {!loading && activeTab === 'nutrition' && (
           <div>
             <div className="section-header">
@@ -2360,7 +2663,7 @@ const Dashboard = () => {
                   <div className="card card-spacing">
                     <h3 className="card-title">Today's Macro Distribution</h3>
                     <div className="macro-chart-container">
-                      <ResponsiveContainer width={300} height={300}>
+                      <ResponsiveContainer width={400} height={300}>
                         <PieChart>
                           <Pie
                             data={macroData}
@@ -2506,7 +2809,7 @@ const Dashboard = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  <div className="food-log-actions">
                                     <div className="food-log-macros">
                                       <span className="macro-badge">{totalCals} cal</span>
                                       <span className="macro-badge">C: {totalCarbs}g</span>
@@ -2732,6 +3035,7 @@ const Dashboard = () => {
       {showEditFoodLog && editingFoodLog && <EditFoodLogForm />}
       {showAddExercise && <AddExerciseToSessionForm />}
       {showAddSet && <AddSetForm />}
+      {showEditSet && editingSet && <EditSetForm />}
       {showAddAerobicMetric && <AddAerobicMetricForm />}
     </div>
   );
