@@ -26,7 +26,7 @@ const LoginRegister = ({ onLogin }) => {
       if (isLogin) {
         const users = await api.user.getAllUsers();
         const user = users.find(u => u.email === formData.email && u.password === formData.password);
-
+        
         if (user) {
           onLogin(user);
         } else {
@@ -94,7 +94,7 @@ const LoginRegister = ({ onLogin }) => {
                 <input
                   type="text"
                   value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  onChange={(e) => setFormData({...formData, first_name: e.target.value})}
                   className="form-input"
                   required
                 />
@@ -104,7 +104,7 @@ const LoginRegister = ({ onLogin }) => {
                 <input
                   type="text"
                   value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  onChange={(e) => setFormData({...formData, last_name: e.target.value})}
                   className="form-input"
                   required
                 />
@@ -117,7 +117,7 @@ const LoginRegister = ({ onLogin }) => {
             <input
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
               className="form-input"
               required
               placeholder="your.email@example.com"
@@ -129,7 +129,7 @@ const LoginRegister = ({ onLogin }) => {
             <input
               type="password"
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
               className="form-input"
               required
               placeholder="••••••••"
@@ -143,7 +143,7 @@ const LoginRegister = ({ onLogin }) => {
                 <input
                   type="number"
                   value={formData.age}
-                  onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  onChange={(e) => setFormData({...formData, age: e.target.value})}
                   className="form-input"
                   min="1"
                   max="99"
@@ -154,7 +154,7 @@ const LoginRegister = ({ onLogin }) => {
                 <label className="form-label">Gender</label>
                 <select
                   value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  onChange={(e) => setFormData({...formData, gender: e.target.value})}
                   className="form-input"
                 >
                   <option value="Male">Male</option>
@@ -195,7 +195,7 @@ const Dashboard = () => {
   const [showNewHealth, setShowNewHealth] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  
   const [currentUser, setCurrentUser] = useState({ user_id: 1, first_name: 'User' });
   const [sessions, setSessions] = useState([]);
   const [healthRecords, setHealthRecords] = useState([]);
@@ -248,17 +248,17 @@ const Dashboard = () => {
   }, [exerciseEquipment]);
 
   const getFilteredExercises = () => {
-    let filtered = exerciseFilter === 'all' ? exercises :
-      exerciseFilter === 'lifting' ? liftingExercises :
-        aerobicExercises;
-
+    let filtered = exerciseFilter === 'all' ? exercises : 
+                  exerciseFilter === 'lifting' ? liftingExercises : 
+                  aerobicExercises;
+    
     if (muscleGroupFilter !== 'all' && muscleGroupFilter !== 'All') {
       filtered = filtered.filter(exercise => {
         const muscles = exerciseMuscles[exercise.exerciseName] || [];
         return muscles.some(muscle => {
           const muscleName = muscle.muscleName.toLowerCase();
           const filterLower = muscleGroupFilter.toLowerCase();
-
+          
           if (filterLower === 'chest') return muscleName.includes('pectoral');
           if (filterLower === 'back') return muscleName.includes('lat') || muscleName.includes('trapezius') || muscleName.includes('rhomboid');
           if (filterLower === 'shoulders') return muscleName.includes('deltoid');
@@ -269,14 +269,14 @@ const Dashboard = () => {
         });
       });
     }
-
+    
     if (equipmentFilter !== 'all' && equipmentFilter !== 'All') {
       filtered = filtered.filter(exercise => {
         const equipment = exerciseEquipment[exercise.exerciseName] || [];
         return equipment.some(eq => eq.equipmentName === equipmentFilter);
       });
     }
-
+    
     return filtered;
   };
 
@@ -306,7 +306,7 @@ const Dashboard = () => {
 
   const fetchFoods = async () => {
     if (!currentUser.user_id) return;
-
+    
     try {
       const [allFoods, userFoodLogs] = await Promise.all([
         api.food.getAllFoods(),
@@ -346,8 +346,8 @@ const Dashboard = () => {
       setExercises(allExercises);
       setLiftingExercises(liftings);
       setAerobicExercises(aerobics);
-
-      const musclePromises = liftings.map(ex =>
+      
+      const musclePromises = liftings.map(ex => 
         fetch(`http://localhost:8000/exercises/lifting/${ex.exerciseName}/muscles`)
           .then(r => r.json())
           .then(data => ({ exerciseName: ex.exerciseName, muscles: data.muscles }))
@@ -359,8 +359,8 @@ const Dashboard = () => {
         musclesMap[item.exerciseName] = item.muscles;
       });
       setExerciseMuscles(musclesMap);
-
-      const equipmentPromises = allExercises.map(ex =>
+      
+      const equipmentPromises = allExercises.map(ex => 
         fetch(`http://localhost:8000/exercises/${ex.exerciseName}/equipment`)
           .then(r => r.json())
           .then(data => ({ exerciseName: ex.exerciseName, equipment: data.equipments }))
@@ -388,7 +388,7 @@ const Dashboard = () => {
         api.health.getHealthRecords(currentUser.user_id),
         api.dashboard.getDashboardStats(currentUser.user_id)
       ]);
-
+      
       setCurrentUser({ ...currentUser, ...userData });
       setSessions(sessionsData);
       setHealthRecords(healthData);
@@ -435,14 +435,14 @@ const Dashboard = () => {
     let totalCarbs = 0;
     let totalProtein = 0;
     let totalFat = 0;
-
+    
     foods.forEach(food => {
       const qty = food.quantity || 1;
       totalCarbs += (food.carbohydrate || 0) * qty;
       totalProtein += (food.protein || 0) * qty;
       totalFat += (food.fat || 0) * qty;
     });
-
+    
     return [
       { name: 'Carbs', value: Math.round(totalCarbs * 10) / 10, color: '#f59e0b' },
       { name: 'Protein', value: Math.round(totalProtein * 10) / 10, color: '#3b82f6' },
@@ -453,8 +453,8 @@ const Dashboard = () => {
   const getFilteredFoodLogs = () => {
     const now = new Date();
     let startDate = new Date();
-
-    switch (foodLogDateRange) {
+    
+    switch(foodLogDateRange) {
       case '7days':
         startDate.setDate(now.getDate() - 7);
         break;
@@ -483,7 +483,7 @@ const Dashboard = () => {
       default:
         startDate.setDate(now.getDate() - 7);
     }
-
+    
     return userFoods.filter(food => {
       const foodDate = new Date(food.create_at);
       return foodDate >= startDate;
@@ -492,7 +492,7 @@ const Dashboard = () => {
 
   const groupFoodsByDate = (foods) => {
     const grouped = {};
-
+    
     foods.forEach(food => {
       const dateKey = food.create_at.split('T')[0] || food.create_at.split(' ')[0];
       if (!grouped[dateKey]) {
@@ -500,7 +500,7 @@ const Dashboard = () => {
       }
       grouped[dateKey].push(food);
     });
-
+    
     return grouped;
   };
 
@@ -509,7 +509,7 @@ const Dashboard = () => {
     let totalCarbs = 0;
     let totalProtein = 0;
     let totalFat = 0;
-
+    
     foods.forEach(food => {
       const qty = food.quantity || 1;
       totalCals += (food.calories || 0) * qty;
@@ -517,7 +517,7 @@ const Dashboard = () => {
       totalProtein += (food.protein || 0) * qty;
       totalFat += (food.fat || 0) * qty;
     });
-
+    
     return {
       calories: Math.round(totalCals),
       carbs: Math.round(totalCarbs * 10) / 10,
@@ -620,8 +620,8 @@ const Dashboard = () => {
     const parseDateTime = (datetime) => {
       if (!datetime) return { date: '', time: '' };
       const dateStr = datetime.includes('T') ? datetime.split('T')[0] : datetime.split(' ')[0];
-      const timeStr = datetime.includes('T')
-        ? datetime.split('T')[1]?.substring(0, 5)
+      const timeStr = datetime.includes('T') 
+        ? datetime.split('T')[1]?.substring(0, 5) 
         : datetime.split(' ')[1]?.substring(0, 5);
       return { date: dateStr || '', time: timeStr || '' };
     };
@@ -668,25 +668,25 @@ const Dashboard = () => {
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">Edit Workout Session</h3>
-
+          
           <div className="form-container">
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Start Date</label>
-                <input
-                  type="date"
+                <input 
+                  type="date" 
                   value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                  className="form-input" 
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Start Time</label>
-                <input
-                  type="time"
+                <input 
+                  type="time" 
                   value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                  className="form-input" 
                 />
               </div>
             </div>
@@ -694,36 +694,36 @@ const Dashboard = () => {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">End Date</label>
-                <input
-                  type="date"
+                <input 
+                  type="date" 
                   value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                  className="form-input" 
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">End Time</label>
-                <input
-                  type="time"
+                <input 
+                  type="time" 
                   value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                  className="form-input" 
                 />
               </div>
             </div>
-
+            
             <div className="form-group">
               <label className="form-label">Notes</label>
-              <textarea
+              <textarea 
                 value={formData.note}
-                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                className="form-textarea"
+                onChange={(e) => setFormData({...formData, note: e.target.value})}
+                className="form-textarea" 
                 rows="3"
                 placeholder="How did the workout feel?"
               />
             </div>
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => {
               setShowEditSession(false);
@@ -771,25 +771,25 @@ const Dashboard = () => {
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">New Workout Session</h3>
-
+          
           <div className="form-container">
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Start Date</label>
-                <input
-                  type="date"
+                <input 
+                  type="date" 
                   value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                  className="form-input" 
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Start Time</label>
-                <input
-                  type="time"
+                <input 
+                  type="time" 
                   value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                  className="form-input" 
                 />
               </div>
             </div>
@@ -797,36 +797,36 @@ const Dashboard = () => {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">End Date</label>
-                <input
-                  type="date"
+                <input 
+                  type="date" 
                   value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                  className="form-input" 
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">End Time</label>
-                <input
-                  type="time"
+                <input 
+                  type="time" 
                   value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  className="form-input"
+                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                  className="form-input" 
                 />
               </div>
             </div>
-
+            
             <div className="form-group">
               <label className="form-label">Notes</label>
-              <textarea
+              <textarea 
                 value={formData.note}
-                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                className="form-textarea"
+                onChange={(e) => setFormData({...formData, note: e.target.value})}
+                className="form-textarea" 
                 rows="3"
                 placeholder="How did the workout feel?"
               />
             </div>
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => setShowNewSession(false)} className="btn-secondary">
               Cancel
@@ -863,11 +863,11 @@ const Dashboard = () => {
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">Add Exercise to Session</h3>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Select Exercise</label>
-              <select
+              <select 
                 value={selectedExerciseName}
                 onChange={(e) => setSelectedExerciseName(e.target.value)}
                 className="form-input"
@@ -886,7 +886,7 @@ const Dashboard = () => {
               </select>
             </div>
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => setShowAddExercise(false)} className="btn-secondary">
               Cancel
@@ -935,14 +935,14 @@ const Dashboard = () => {
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">Add Set - {selectedExercise?.exerciseName}</h3>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Set Number</label>
-              <input
-                type="number"
+              <input 
+                type="number" 
                 value={formData.setNum}
-                onChange={(e) => setFormData({ ...formData, setNum: e.target.value })}
+                onChange={(e) => setFormData({...formData, setNum: e.target.value})}
                 className="form-input"
                 min="1"
               />
@@ -951,28 +951,28 @@ const Dashboard = () => {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Weight (lbs)</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   step="2.5"
                   value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  onChange={(e) => setFormData({...formData, weight: e.target.value})}
                   className="form-input"
                   placeholder="135"
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Reps</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   value={formData.reps}
-                  onChange={(e) => setFormData({ ...formData, reps: e.target.value })}
+                  onChange={(e) => setFormData({...formData, reps: e.target.value})}
                   className="form-input"
                   placeholder="10"
                 />
               </div>
             </div>
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => setShowAddSet(false)} className="btn-secondary">
               Cancel
@@ -988,7 +988,7 @@ const Dashboard = () => {
 
   const EditSetForm = () => {
     const originalSetNum = useRef(editingSet?.setNum);
-
+    
     const [formData, setFormData] = useState({
       setNum: editingSet?.setNum || 1,
       weight: editingSet?.weight || '',
@@ -1056,14 +1056,14 @@ const Dashboard = () => {
               <Trash2 size={16} />
             </button>
           </div>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Set Number</label>
-              <input
-                type="number"
+              <input 
+                type="number" 
                 value={formData.setNum}
-                onChange={(e) => setFormData({ ...formData, setNum: e.target.value })}
+                onChange={(e) => setFormData({...formData, setNum: e.target.value})}
                 className="form-input"
                 min="1"
               />
@@ -1072,28 +1072,28 @@ const Dashboard = () => {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Weight (lbs)</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   step="2.5"
                   value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  onChange={(e) => setFormData({...formData, weight: e.target.value})}
                   className="form-input"
                   placeholder="135"
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Reps</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   value={formData.reps}
-                  onChange={(e) => setFormData({ ...formData, reps: e.target.value })}
+                  onChange={(e) => setFormData({...formData, reps: e.target.value})}
                   className="form-input"
                   placeholder="10"
                 />
               </div>
             </div>
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => {
               setShowEditSet(false);
@@ -1121,7 +1121,7 @@ const Dashboard = () => {
     useEffect(() => {
       const fetchExercises = async () => {
         if (isFetchingLocalRef.current) return;
-
+        
         isFetchingLocalRef.current = true;
         try {
           const exerciseNames = await api.session.getSessionExercises(selectedSession.session_id);
@@ -1150,7 +1150,7 @@ const Dashboard = () => {
 
     const toggleExercise = async (exerciseName) => {
       const isCurrentlyExpanded = expandedExercises[exerciseName];
-
+      
       setExpandedExercises(prev => ({
         ...prev,
         [exerciseName]: !prev[exerciseName]
@@ -1159,7 +1159,7 @@ const Dashboard = () => {
       if (!isCurrentlyExpanded) {
         const isLiftingExercise = liftingExercises.some(e => e.exerciseName === exerciseName);
         const isAerobicExercise = aerobicExercises.some(e => e.exerciseName === exerciseName);
-
+        
         if (isLiftingExercise && !exerciseSets[exerciseName]) {
           try {
             const sets = await api.lifting.getSets(exerciseName, selectedSession.session_id);
@@ -1225,7 +1225,7 @@ const Dashboard = () => {
       try {
         const isLiftingExercise = liftingExercises.some(e => e.exerciseName === exerciseName);
         const isAerobicExercise = aerobicExercises.some(e => e.exerciseName === exerciseName);
-
+        
         if (isLiftingExercise) {
           const sets = await api.lifting.getSets(exerciseName, selectedSession.session_id);
           for (const set of sets) {
@@ -1241,23 +1241,23 @@ const Dashboard = () => {
             console.log('No metrics to delete or error deleting metrics:', err);
           }
         }
-
+        
         await api.session.removeExerciseFromSession(selectedSession.session_id, exerciseName);
-
+        
         setLocalExercises(prev => prev.filter(ex => ex.exerciseName !== exerciseName));
-
+        
         setExerciseSets(prev => {
-          const updated = { ...prev };
+          const updated = {...prev};
           delete updated[exerciseName];
           return updated;
         });
         setAerobicMetrics(prev => {
-          const updated = { ...prev };
+          const updated = {...prev};
           delete updated[exerciseName];
           return updated;
         });
         setExpandedExercises(prev => {
-          const updated = { ...prev };
+          const updated = {...prev};
           delete updated[exerciseName];
           return updated;
         });
@@ -1304,7 +1304,7 @@ const Dashboard = () => {
 
         <div className="exercises-section">
           <h3 className="section-title">Exercises</h3>
-
+          
           {localExercises.length === 0 ? (
             <p className="no-data">No exercises added yet. Click "Add Exercise" to get started!</p>
           ) : (
@@ -1312,10 +1312,10 @@ const Dashboard = () => {
               {localExercises.map((exercise, i) => {
                 const isExpanded = expandedExercises[exercise.exerciseName];
                 const isAerobic = aerobicExercises.some(e => e.exerciseName === exercise.exerciseName);
-
+                
                 return (
                   <div key={i} className="exercise-detail-card">
-                    <div
+                    <div 
                       className="exercise-detail-header"
                       onClick={() => toggleExercise(exercise.exerciseName)}
                     >
@@ -1335,7 +1335,7 @@ const Dashboard = () => {
                           <Trash2 size={16} />
                         </button>
                         {isAerobic && (
-                          <button
+                          <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedAerobicExercise(exercise);
@@ -1348,7 +1348,7 @@ const Dashboard = () => {
                           </button>
                         )}
                         {!isAerobic && (
-                          <button
+                          <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedExercise(exercise);
@@ -1360,12 +1360,12 @@ const Dashboard = () => {
                             Add Set
                           </button>
                         )}
-                        <ChevronRight
+                        <ChevronRight 
                           className={`chevron-icon ${isExpanded ? 'chevron-expanded' : ''}`}
                         />
                       </div>
                     </div>
-
+                    
                     {isExpanded && (
                       <div className="exercise-detail-content">
                         {isAerobic ? (
@@ -1453,7 +1453,7 @@ const Dashboard = () => {
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                       </svg>
                                     </button>
-                                    <button
+                                    <button 
                                       onClick={() => handleDeleteSet(exercise.exerciseName, set.setNum)}
                                       className="btn-delete"
                                     >
@@ -1510,42 +1510,42 @@ const Dashboard = () => {
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">New Health Record</h3>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Date</label>
-              <input
-                type="date"
+              <input 
+                type="date" 
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="form-input"
+                onChange={(e) => setFormData({...formData, date: e.target.value})}
+                className="form-input" 
               />
             </div>
 
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Weight (lbs)</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   value={formData.weight}
-                  onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                  onChange={(e) => setFormData({...formData, weight: e.target.value})}
                   className="form-input"
                   placeholder="185.5"
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Body Fat (%)</label>
-                <input
-                  type="number"
+                <input 
+                  type="number" 
                   value={formData.body_fat_percent}
-                  onChange={(e) => setFormData({ ...formData, body_fat_percent: e.target.value })}
+                  onChange={(e) => setFormData({...formData, body_fat_percent: e.target.value})}
                   className="form-input"
                   placeholder="15.2"
                 />
               </div>
             </div>
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => setShowNewHealth(false)} className="btn-secondary">
               Cancel
@@ -1581,7 +1581,7 @@ const Dashboard = () => {
         const day = String(date.getDate()).padStart(2, '0');
         dateStr = `${year}-${month}-${day}`;
       }
-
+      
       await api.health.deleteHealthRecord(currentUser.user_id, dateStr);
       await fetchAllData();
     } catch (err) {
@@ -1632,31 +1632,32 @@ const Dashboard = () => {
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">Add New Food</h3>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Food Name</label>
-              <input
-                type="text"
+              <input 
+                type="text" 
                 value={formData.foodName}
-                onChange={(e) => setFormData({ ...formData, foodName: e.target.value })}
+                onChange={(e) => setFormData({...formData, foodName: e.target.value})}
                 className="form-input"
                 placeholder="e.g., Chicken Breast"
               />
             </div>
-
+            
             <div className="form-group">
-              <label className="form-label">Serving Size (g)</label>
+              <label className="form-label">Serving Size</label>
               <div className="input-with-suffix">
-                <input
+                <input 
                   type="number"
                   step="1"
                   min="1"
-                  value={formData.servingSize}
-                  onChange={(e) => setFormData({ ...formData, servingSize: e.target.value })}
+                  value={formData.servingSize.replace('g', '')}
+                  onChange={(e) => setFormData({...formData, servingSize: e.target.value + 'g'})}
                   className="form-input"
                   placeholder="100"
                 />
+                <span className="input-suffix">g</span>
               </div>
               <p className="form-hint">
                 All macros should be per this serving size (we recommend 100g)
@@ -1666,32 +1667,32 @@ const Dashboard = () => {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Carbs (g)</label>
-                <input
+                <input 
                   type="number"
                   value={formData.carbohydrate}
-                  onChange={(e) => setFormData({ ...formData, carbohydrate: e.target.value })}
+                  onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
                   placeholder="25.5"
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Protein (g)</label>
-                <input
+                <input 
                   type="number"
                   value={formData.protein}
-                  onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
+                  onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
                   placeholder="30.0"
                 />
               </div>
             </div>
-
+            
             <div className="form-group">
               <label className="form-label">Fat (g)</label>
-              <input
+              <input 
                 type="number"
                 value={formData.fat}
-                onChange={(e) => setFormData({ ...formData, fat: e.target.value })}
+                onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
                 placeholder="5.5"
               />
@@ -1700,12 +1701,12 @@ const Dashboard = () => {
             {(formData.carbohydrate || formData.protein || formData.fat) && (
               <div className="calorie-preview">
                 <p className="calorie-preview-text">
-                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize} g
+                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize}
                 </p>
               </div>
             )}
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => setShowNewFood(false)} className="btn-secondary">
               Cancel
@@ -1787,30 +1788,31 @@ const Dashboard = () => {
               <Trash2 size={16} />
             </button>
           </div>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Food Name</label>
-              <input
-                type="text"
+              <input 
+                type="text" 
                 value={formData.foodName}
                 className="form-input food-name-disabled"
                 disabled
               />
             </div>
-
+            
             <div className="form-group">
-              <label className="form-label">Serving Size (g)</label>
+              <label className="form-label">Serving Size</label>
               <div className="input-with-suffix">
-                <input
+                <input 
                   type="number"
                   step="1"
                   min="1"
-                  value={formData.servingSize}
-                  onChange={(e) => setFormData({ ...formData, servingSize: e.target.value })}
+                  value={formData.servingSize.replace('g', '')}
+                  onChange={(e) => setFormData({...formData, servingSize: e.target.value + 'g'})}
                   className="form-input"
                   placeholder="100"
                 />
+                <span className="input-suffix">g</span>
               </div>
               <p className="form-hint">
                 All macros should be per this serving size
@@ -1820,45 +1822,45 @@ const Dashboard = () => {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Carbs (g)</label>
-                <input
+                <input 
                   type="number"
                   value={formData.carbohydrate}
-                  onChange={(e) => setFormData({ ...formData, carbohydrate: e.target.value })}
+                  onChange={(e) => setFormData({...formData, carbohydrate: e.target.value})}
                   className="form-input"
                   placeholder="25.5"
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Protein (g)</label>
-                <input
+                <input 
                   type="number"
                   value={formData.protein}
-                  onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
+                  onChange={(e) => setFormData({...formData, protein: e.target.value})}
                   className="form-input"
                   placeholder="30.0"
                 />
               </div>
             </div>
-
+            
             <div className="form-group">
               <label className="form-label">Fat (g)</label>
-              <input
+              <input 
                 type="number"
                 value={formData.fat}
-                onChange={(e) => setFormData({ ...formData, fat: e.target.value })}
+                onChange={(e) => setFormData({...formData, fat: e.target.value})}
                 className="form-input"
-                placeholder="5.5" />
+                placeholder="5.5"/>
             </div>
 
             {(formData.carbohydrate || formData.protein || formData.fat) && (
               <div className="calorie-preview">
                 <p className="calorie-preview-text">
-                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize} g
+                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize}
                 </p>
               </div>
             )}
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => {
               setShowEditFood(false);
@@ -1920,11 +1922,11 @@ const Dashboard = () => {
       <div className="modal-overlay">
         <div className="modal-content">
           <h3 className="modal-title">Log Food</h3>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Select Food</label>
-              <select
+              <select 
                 value={selectedFood}
                 onChange={(e) => {
                   setSelectedFood(e.target.value);
@@ -1935,7 +1937,7 @@ const Dashboard = () => {
                 <option value="">Choose a food...</option>
                 {foods.map((food, i) => (
                   <option key={i} value={food.foodName}>
-                    {food.foodName} - {food.servingSize}g ({Math.round(food.calories || 0)} cal)
+                    {food.foodName} - {food.servingSize || '100g'} ({Math.round(food.calories || 0)} cal)
                   </option>
                 ))}
               </select>
@@ -1955,7 +1957,7 @@ const Dashboard = () => {
               <>
                 <div className="form-group">
                   <label className="form-label">
-                    Quantity (servings of {getSelectedFoodData().servingSize}g)
+                    Quantity (servings of {getSelectedFoodData().servingSize || '100g'})
                   </label>
                   <div className="quantity-controls">
                     <button
@@ -1989,7 +1991,7 @@ const Dashboard = () => {
                     </button>
                   </div>
                   <p className="quantity-hint">
-                    = {(quantity * getSelectedFoodData().servingSize).toFixed(0)}g total
+                    = {(quantity * (getSelectedFoodData().servingSize === '100g' ? 100 : 1)).toFixed(0)}g total
                   </p>
                 </div>
 
@@ -1999,7 +2001,7 @@ const Dashboard = () => {
                     <div className="macro-item">
                       <span className="macro-label">Calories</span>
                       <span className="macro-value">
-                        {calculateTotal(getSelectedFoodData().calories)}cal
+                        {calculateTotal(getSelectedFoodData().calories)}
                       </span>
                     </div>
                     <div className="macro-item">
@@ -2022,13 +2024,13 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <p className="quantity-summary">
-                    {quantity} serving
+                    {quantity} × {getSelectedFoodData().servingSize || '100g'} serving
                   </p>
                 </div>
               </>
             )}
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => {
               setShowLogFood(false);
@@ -2069,18 +2071,18 @@ const Dashboard = () => {
 
       try {
         const oldCreateAt = editingFoodLog.create_at.split('T')[0] || editingFoodLog.create_at.split(' ')[0];
-        const oldTime = editingFoodLog.create_at.split('T')[1]?.substring(0, 8) ||
-          editingFoodLog.create_at.split(' ')[1]?.substring(0, 8) || '00:00:00';
-
+        const oldTime = editingFoodLog.create_at.split('T')[1]?.substring(0, 8) || 
+                        editingFoodLog.create_at.split(' ')[1]?.substring(0, 8) || '00:00:00';
+        
         await api.food.deleteUserFoodLog(
-          currentUser.user_id,
+          currentUser.user_id, 
           editingFoodLog.foodName,
           `${oldCreateAt} ${oldTime}`
         );
-
+        
         const newCreateAt = `${logDate} ${oldTime}`;
         await api.food.logFood(currentUser.user_id, editingFoodLog.foodName, quantity, newCreateAt);
-
+        
         setShowEditFoodLog(false);
         setEditingFoodLog(null);
         fetchFoods();
@@ -2097,15 +2099,15 @@ const Dashboard = () => {
 
       try {
         const dateStr = editingFoodLog.create_at.split('T')[0] || editingFoodLog.create_at.split(' ')[0];
-        const timeStr = editingFoodLog.create_at.split('T')[1]?.substring(0, 8) ||
-          editingFoodLog.create_at.split(' ')[1]?.substring(0, 8) || '00:00:00';
-
+        const timeStr = editingFoodLog.create_at.split('T')[1]?.substring(0, 8) || 
+                        editingFoodLog.create_at.split(' ')[1]?.substring(0, 8) || '00:00:00';
+        
         await api.food.deleteUserFoodLog(
-          currentUser.user_id,
+          currentUser.user_id, 
           editingFoodLog.foodName,
           `${dateStr} ${timeStr}`
         );
-
+        
         setShowEditFoodLog(false);
         setEditingFoodLog(null);
         fetchFoods();
@@ -2128,12 +2130,12 @@ const Dashboard = () => {
               <Trash2 size={16} />
             </button>
           </div>
-
+          
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Food</label>
-              <input
-                type="text"
+              <input 
+                type="text" 
                 value={editingFoodLog.foodName}
                 className="form-input food-name-disabled"
                 disabled
@@ -2217,7 +2219,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="modal-buttons">
             <button onClick={() => {
               setShowEditFoodLog(false);
@@ -2233,35 +2235,14 @@ const Dashboard = () => {
       </div>
     );
   };
-
+  
   const AddAerobicMetricForm = () => {
     const [formData, setFormData] = useState({
-      metricNum: '',
+      metricNum: '', 
       duration: '',
       distance: ''
     });
 
-<<<<<<< HEAD
-=======
-    useEffect(() => {
-      const fetchExisting = async () => {
-        if (selectedAerobicExercise) {
-          try {
-            const metrics = await api.aerobic.getMetrics(
-              selectedAerobicExercise.exerciseName,
-              selectedSession.session_id
-            );
-            setExistingMetrics(metrics);
-          } catch (err) {
-            console.error('Error fetching existing metrics:', err);
-            setExistingMetrics([]);
-          }
-        }
-      };
-      fetchExisting();
-    }, [selectedAerobicExercise]);
-
->>>>>>> c5beb073e29c015b1c30a35de047b97118ad5653
     const handleSubmit = async () => {
       if (!formData.metricNum) {
         alert('Please provide a metric number');
@@ -2274,7 +2255,6 @@ const Dashboard = () => {
       }
 
       try {
-<<<<<<< HEAD
         await api.aerobic.addMetric(
           selectedAerobicExercise.exerciseName,
           selectedSession.session_id,
@@ -2285,33 +2265,6 @@ const Dashboard = () => {
           }
         );
         
-=======
-        const existingMetric = existingMetrics.find(m => m.metricNum === parseInt(formData.metricNum));
-
-        if (existingMetric) {
-          await api.aerobic.updateMetric(
-            selectedAerobicExercise.exerciseName,
-            selectedSession.session_id,
-            parseInt(formData.metricNum),
-            {
-              metricNum: parseInt(formData.metricNum),
-              duration: formData.duration || null,
-              distance: formData.distance ? parseFloat(formData.distance) : null
-            }
-          );
-        } else {
-          await api.aerobic.addMetric(
-            selectedAerobicExercise.exerciseName,
-            selectedSession.session_id,
-            {
-              metricNum: parseInt(formData.metricNum),
-              duration: formData.duration || null,
-              distance: formData.distance ? parseFloat(formData.distance) : null
-            }
-          );
-        }
-
->>>>>>> c5beb073e29c015b1c30a35de047b97118ad5653
         setShowAddAerobicMetric(false);
         setSelectedAerobicExercise(null);
         setExerciseRefreshKey(prev => prev + 1);
@@ -2447,7 +2400,6 @@ const Dashboard = () => {
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-<<<<<<< HEAD
           <div className="modal-title-row">
             <h3 className="modal-title">Edit Metric - {exercise?.exerciseName}</h3>
             <button
@@ -2459,19 +2411,12 @@ const Dashboard = () => {
             </button>
           </div>
           
-=======
-          <h3 className="modal-title">
-            Manage Metrics - {selectedAerobicExercise?.exerciseName}
-          </h3>
-
->>>>>>> c5beb073e29c015b1c30a35de047b97118ad5653
           <div className="form-container">
             <div className="form-group">
               <label className="form-label">Metric Number</label>
-              <input
-                type="number"
+              <input 
+                type="number" 
                 value={formData.metricNum}
-<<<<<<< HEAD
                 onChange={(e) => setFormData({...formData, metricNum: e.target.value})}
                 className="form-input"
                 min="1"
@@ -2500,59 +2445,10 @@ const Dashboard = () => {
                   placeholder="3.5"
                 />
               </div>
-=======
-                onChange={(e) => {
-                  const metricNum = e.target.value;
-                  setFormData({ ...formData, metricNum });
-
-                  if (metricNum) {
-                    const existing = existingMetrics.find(m => m.metricNum === parseInt(metricNum));
-                    if (existing) {
-                      setFormData({
-                        metricNum,
-                        duration: existing.duration || '',
-                        distance: existing.distance || ''
-                      });
-                    }
-                  }
-                }}
-                className="form-input"
-                min="1"
-                placeholder="1"
-              />
-              <p className="form-hint">
-                {existingMetrics.length > 0 && (
-                  <>Existing metrics: {existingMetrics.map(m => m.metricNum).join(', ')}</>
-                )}
-              </p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Duration (HH:MM:SS)</label>
-              <input
-                type="text"
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                className="form-input"
-                placeholder="00:30:00"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Distance (miles)</label>
-              <input
-                type="number"
-                value={formData.distance}
-                onChange={(e) => setFormData({ ...formData, distance: e.target.value })}
-                className="form-input"
-                placeholder="3.5"
-              />
->>>>>>> c5beb073e29c015b1c30a35de047b97118ad5653
             </div>
           </div>
-
+          
           <div className="modal-buttons">
-<<<<<<< HEAD
             <button onClick={() => {
               setShowEditAerobicMetric(false);
               setEditingAerobicMetric(null);
@@ -2562,24 +2458,6 @@ const Dashboard = () => {
             </button>
             <button onClick={handleSubmit} className="btn-primary">
               Update Metric
-=======
-            {formData.metricNum && existingMetrics.some(m => m.metricNum === parseInt(formData.metricNum)) && (
-              <button
-                onClick={handleDelete}
-                className="btn-delete"
-                style={{ marginRight: 'auto' }}
-              >
-                <Trash2 size={16} />
-                Delete
-              </button>
-            )}
-            <button onClick={() => setShowAddAerobicMetric(false)} className="btn-secondary">
-              Cancel
-            </button>
-            <button onClick={handleSubmit} className="btn-primary">
-              {formData.metricNum && existingMetrics.some(m => m.metricNum === parseInt(formData.metricNum))
-                ? 'Update' : 'Add'} Metric
->>>>>>> c5beb073e29c015b1c30a35de047b97118ad5653
             </button>
           </div>
         </div>
@@ -2635,30 +2513,30 @@ const Dashboard = () => {
       <div className="main-content">
         {loading && <div className="loading">Loading...</div>}
         {error && <div className="error">Error: {error}</div>}
-
+        
         {!loading && activeTab === 'overview' && (
           <div className="content-container">
             <div className="stats-grid">
-              <StatCard
-                icon={Calendar}
-                label="Total Sessions"
-                value={dashboardStats?.total_sessions || 0}
-                trend={dashboardStats?.sessions_this_week ? `+${dashboardStats.sessions_this_week} this week` : null}
+              <StatCard 
+                icon={Calendar} 
+                label="Total Sessions" 
+                value={dashboardStats?.total_sessions || 0} 
+                trend={dashboardStats?.sessions_this_week ? `+${dashboardStats.sessions_this_week} this week` : null} 
               />
-              <StatCard
-                icon={Dumbbell}
-                label="Current Weight"
-                value={dashboardStats?.current_weight ? `${dashboardStats.current_weight} lbs` : 'N/A'}
+              <StatCard 
+                icon={Dumbbell} 
+                label="Current Weight" 
+                value={dashboardStats?.current_weight ? `${dashboardStats.current_weight} lbs` : 'N/A'} 
               />
-              <StatCard
-                icon={Activity}
-                label="Avg Duration"
-                value={dashboardStats?.avg_duration_minutes ? `${dashboardStats.avg_duration_minutes} min` : 'N/A'}
+              <StatCard 
+                icon={Activity} 
+                label="Avg Duration" 
+                value={dashboardStats?.avg_duration_minutes ? `${dashboardStats.avg_duration_minutes} min` : 'N/A'} 
               />
-              <StatCard
-                icon={Heart}
-                label="Body Fat"
-                value={dashboardStats?.current_body_fat ? `${dashboardStats.current_body_fat}%` : 'N/A'}
+              <StatCard 
+                icon={Heart} 
+                label="Body Fat" 
+                value={dashboardStats?.current_body_fat ? `${dashboardStats.current_body_fat}%` : 'N/A'} 
               />
             </div>
 
@@ -2716,23 +2594,23 @@ const Dashboard = () => {
             <div className="section-header">
               <h2 className="page-title">Exercise Library</h2>
             </div>
-
+            
             <div className="exercise-filter-group">
               <div className="filter-group-label">Exercise Type:</div>
               <div className="filter-buttons">
-                <button
+                <button 
                   onClick={() => setExerciseFilter('all')}
                   className={exerciseFilter === 'all' ? 'filter-btn filter-btn-active' : 'filter-btn'}
                 >
                   All ({exercises.length})
                 </button>
-                <button
+                <button 
                   onClick={() => setExerciseFilter('lifting')}
                   className={exerciseFilter === 'lifting' ? 'filter-btn filter-btn-active' : 'filter-btn'}
                 >
                   Lifting ({liftingExercises.length})
                 </button>
-                <button
+                <button 
                   onClick={() => setExerciseFilter('aerobics')}
                   className={exerciseFilter === 'aerobics' ? 'filter-btn filter-btn-active' : 'filter-btn'}
                 >
@@ -2740,7 +2618,7 @@ const Dashboard = () => {
                 </button>
               </div>
             </div>
-
+            
             {exerciseFilter !== 'aerobics' && (
               <div className="exercise-filter-group">
                 <div className="filter-group-label">Target Muscle Group:</div>
@@ -2757,7 +2635,7 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-
+            
             <div className="exercise-filter-group">
               <div className="filter-group-label">Equipment Available:</div>
               <select
@@ -2772,13 +2650,13 @@ const Dashboard = () => {
                 ))}
               </select>
             </div>
-
+            
             <div className="exercise-grid">
               {getFilteredExercises().map((exercise, i) => {
                 const isAerobic = aerobicExercises.some(e => e.exerciseName === exercise.exerciseName);
                 const muscles = !isAerobic ? exerciseMuscles[exercise.exerciseName] || [] : [];
                 const equipment = exerciseEquipment[exercise.exerciseName] || [];
-
+                
                 return (
                   <div key={i} className="exercise-card">
                     <div className="exercise-card-header">
@@ -2797,7 +2675,7 @@ const Dashboard = () => {
                     <p className="exercise-description">
                       {exercise.description || 'No description available'}
                     </p>
-
+                    
                     {equipment.length > 0 && (
                       <div className="exercise-equipment">
                         <div className="equipment-label">Equipment:</div>
@@ -2810,7 +2688,7 @@ const Dashboard = () => {
                         </div>
                       </div>
                     )}
-
+                    
                     {muscles.length > 0 && (
                       <div className="exercise-muscles">
                         <div className="muscles-label">Target Muscles:</div>
@@ -2827,7 +2705,7 @@ const Dashboard = () => {
                 );
               })}
             </div>
-
+            
             {getFilteredExercises().length === 0 && (
               <p className="no-data">No exercises found matching your filters</p>
             )}
@@ -2852,20 +2730,20 @@ const Dashboard = () => {
             {(() => {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-
+              
               const todaysFoods = userFoods.filter(food => {
                 const foodDate = new Date(food.create_at);
                 foodDate.setHours(0, 0, 0, 0);
                 return foodDate.getTime() === today.getTime();
               });
-
+              
               if (todaysFoods.length > 0) {
                 const macroData = calculateDailyMacros(todaysFoods);
                 const totalGrams = macroData.reduce((sum, item) => sum + item.value, 0);
                 const totalCalories = todaysFoods.reduce((sum, food) => {
                   return sum + ((food.calories || 0) * (food.quantity || 1));
                 }, 0);
-
+                
                 return (
                   <div className="card card-spacing">
                     <h3 className="card-title">Today's Macro Distribution</h3>
@@ -2890,7 +2768,7 @@ const Dashboard = () => {
                           <Legend />
                         </PieChart>
                       </ResponsiveContainer>
-
+                      
                       <div className="macro-stats-panel">
                         <div className="macro-stats-total">
                           <div className="macro-stats-label">Total Calories Today</div>
@@ -2922,12 +2800,12 @@ const Dashboard = () => {
                 );
               }
             })()}
-
+            
             <div className="card card-spacing">
               <div className="food-log-header">
                 <h3 className="card-title">Food Log</h3>
                 <div className="date-range-controls">
-                  <select
+                  <select 
                     value={foodLogDateRange}
                     onChange={(e) => setFoodLogDateRange(e.target.value)}
                     className="form-input"
@@ -2963,11 +2841,11 @@ const Dashboard = () => {
                 const filteredFoods = getFilteredFoodLogs();
                 const groupedFoods = groupFoodsByDate(filteredFoods);
                 const dates = Object.keys(groupedFoods).sort((a, b) => new Date(b) - new Date(a));
-
+                
                 if (dates.length === 0) {
                   return <p className="no-data">No food logged in this date range</p>;
                 }
-
+                
                 return (
                   <div className="food-log-days-container">
                     {dates.map((date, idx) => {
@@ -2977,14 +2855,14 @@ const Dashboard = () => {
                       const today = new Date();
                       const yesterday = new Date(today);
                       yesterday.setDate(yesterday.getDate() - 1);
-
+                      
                       let dateLabel = formatDate(date);
                       if (dateObj.toDateString() === today.toDateString()) {
                         dateLabel = 'Today';
                       } else if (dateObj.toDateString() === yesterday.toDateString()) {
                         dateLabel = 'Yesterday';
                       }
-
+                      
                       return (
                         <div key={idx} className="card daily-food-card">
                           <div className="daily-food-header">
@@ -2995,7 +2873,7 @@ const Dashboard = () => {
                               </div>
                             </div>
                           </div>
-
+                          
                           <div className="food-log-list">
                             {foods.map((food, i) => {
                               const qty = food.quantity || 1;
@@ -3003,15 +2881,17 @@ const Dashboard = () => {
                               const totalCarbs = Math.round((food.carbohydrate || 0) * qty * 10) / 10;
                               const totalProtein = Math.round((food.protein || 0) * qty * 10) / 10;
                               const totalFat = Math.round((food.fat || 0) * qty * 10) / 10;
-
+                              
                               return (
                                 <div key={i} className="food-log-item">
                                   <div>
                                     <div className="food-log-name">
                                       {food.foodName || food.food_name}
-                                      <span className="food-quantity-badge">
-                                        ({qty} × {food.servingSize}g)
-                                      </span>
+                                      {qty !== 1 && (
+                                        <span className="food-quantity-badge">
+                                          ({qty} × {food.servingSize || '100g'})
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="food-log-actions">
@@ -3065,14 +2945,14 @@ const Dashboard = () => {
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                       </svg>
                     </button>
-
+                    
                     <div className="food-card-header">
                       <h4 className="food-name food-name-no-margin">{food.foodName}</h4>
                       <span className="food-calories">{Math.round(food.calories || 0)} cal</span>
                     </div>
-
-                    <p className="food-serving-text">per {food.servingSize}g</p>
-
+                    
+                    <p className="food-serving-text">per {food.servingSize || '100g'}</p>
+                    
                     <div className="food-macros">
                       <div className="macro-detail">
                         <span className="macro-label">Carbs</span>
@@ -3103,7 +2983,7 @@ const Dashboard = () => {
                 Add Record
               </button>
             </div>
-
+            
             {healthRecords.length > 0 && (
               <div className="card card-spacing">
                 <h3 className="card-title">Health Progress</h3>
@@ -3111,17 +2991,17 @@ const Dashboard = () => {
                   <div className="chart-container">
                     <h4 className="chart-title">Weight Progress</h4>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart
+                      <LineChart 
                         data={healthRecords.slice().reverse()}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="createdAt"
+                        <XAxis 
+                          dataKey="createdAt" 
                           tickFormatter={(value) => formatDateTime(value)}
                           style={{ fontSize: '0.75rem' }}
                         />
-                        <YAxis
+                        <YAxis 
                           label={{ value: 'Weight (lbs)', angle: -90, position: 'insideLeft' }}
                           domain={(() => {
                             const weights = healthRecords.map(r => r.weight);
@@ -3135,15 +3015,15 @@ const Dashboard = () => {
                             ];
                           })()}
                         />
-                        <Tooltip
+                        <Tooltip 
                           labelFormatter={(value) => formatDateTime(value)}
                           formatter={(value) => [`${value} lbs`, 'Weight']}
                         />
-                        <Line
-                          type="monotone"
-                          dataKey="weight"
-                          stroke="#2563eb"
-                          name="Weight (lbs)"
+                        <Line 
+                          type="monotone" 
+                          dataKey="weight" 
+                          stroke="#2563eb" 
+                          name="Weight (lbs)" 
                           strokeWidth={3}
                           dot={{ r: 4 }}
                           activeDot={{ r: 6 }}
@@ -3154,17 +3034,17 @@ const Dashboard = () => {
                   <div className="chart-container">
                     <h4 className="chart-title">Body Fat Progress</h4>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart
+                      <LineChart 
                         data={healthRecords.slice().reverse()}
                         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                          dataKey="createdAt"
+                        <XAxis 
+                          dataKey="createdAt" 
                           tickFormatter={(value) => formatDateTime(value)}
                           style={{ fontSize: '0.75rem' }}
                         />
-                        <YAxis
+                        <YAxis 
                           label={{ value: 'Body Fat %', angle: -90, position: 'insideLeft' }}
                           domain={(() => {
                             const bodyFats = healthRecords.map(r => r.body_fat_percent);
@@ -3174,19 +3054,19 @@ const Dashboard = () => {
                             const padding = Math.max(range * 0.2, 2);
                             return [
                               Math.max(0, Math.floor(minBF - padding)),
-                              Math.min(100, Math.ceil(maxBF + padding))
+                              Math.min(100, Math.ceil(maxBF + padding)) 
                             ];
                           })()}
                         />
-                        <Tooltip
+                        <Tooltip 
                           labelFormatter={(value) => formatDateTime(value)}
                           formatter={(value) => [`${value}%`, 'Body Fat']}
                         />
-                        <Line
-                          type="monotone"
-                          dataKey="body_fat_percent"
-                          stroke="#059669"
-                          name="Body Fat %"
+                        <Line 
+                          type="monotone" 
+                          dataKey="body_fat_percent" 
+                          stroke="#059669" 
+                          name="Body Fat %" 
                           strokeWidth={3}
                           dot={{ r: 4 }}
                           activeDot={{ r: 6 }}
@@ -3197,7 +3077,7 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-
+            
             <div className="card">
               <h3 className="card-title">All Records</h3>
               <div className="health-records-list">
@@ -3216,7 +3096,7 @@ const Dashboard = () => {
                         </div>
                       </div>
                     </div>
-                    <button
+                    <button 
                       onClick={() => handleDeleteHealth(record.createdAt)}
                       className="btn-delete"
                     >
