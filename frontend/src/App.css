@@ -858,8 +858,8 @@ body {
 
 /* Aerobics Metrics */
 .aerobics-metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
 }
 
