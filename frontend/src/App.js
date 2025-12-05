@@ -988,7 +988,6 @@ const Dashboard = () => {
 
   const EditSetForm = () => {
     const originalSetNum = useRef(editingSet?.setNum);
-    
     const [formData, setFormData] = useState({
       setNum: editingSet?.setNum || 1,
       weight: editingSet?.weight || '',
@@ -1481,7 +1480,13 @@ const Dashboard = () => {
 
   const NewHealthRecordForm = () => {
     const [formData, setFormData] = useState({
-      date: new Date().toISOString().split('T')[0],
+      date: (() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      })(),
       weight: '',
       body_fat_percent: ''
     });
@@ -1880,7 +1885,13 @@ const Dashboard = () => {
   const LogFoodForm = () => {
     const [selectedFood, setSelectedFood] = useState('');
     const [quantity, setQuantity] = useState(1);
-    const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
+    const [logDate, setLogDate] = useState((() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })());
 
     const adjustQuantity = (delta) => {
       setQuantity(prev => Math.max(0.1, Number((prev + delta).toFixed(1))));
@@ -1911,7 +1922,13 @@ const Dashboard = () => {
         setShowLogFood(false);
         setSelectedFood('');
         setQuantity(1);
-        setLogDate(new Date().toISOString().split('T')[0]);
+        setLogDate((() => {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        })());
         fetchFoods();
       } catch (err) {
         alert('Error logging food: ' + err.message);
@@ -2036,7 +2053,13 @@ const Dashboard = () => {
               setShowLogFood(false);
               setSelectedFood('');
               setQuantity(1);
-              setLogDate(new Date().toISOString().split('T')[0]);
+              setLogDate((() => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+              })());
             }} className="btn-secondary">
               Cancel
             </button>
