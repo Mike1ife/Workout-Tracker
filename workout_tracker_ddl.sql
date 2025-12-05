@@ -298,9 +298,36 @@ CREATE PROCEDURE sp_insert_food(
     IN p_fat DECIMAL(5,2)
 )
 BEGIN
+    DECLARE v_calculated_calories DECIMAL(7,2);
+
+    IF p_serving_size <= 0 OR p_serving_size > 99999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Serving size must be between 0.01 and 99999.99';
+    END IF;
+    IF p_carbohydrate < 0 OR p_carbohydrate > 999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Carbohydrate must be between 0 and 999.99';
+    END IF;
+    IF p_protein < 0 OR p_protein > 999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Protein must be between 0 and 999.99';
+    END IF;
+    IF p_fat < 0 OR p_fat > 999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Fat must be between 0 and 999.99';
+    END IF;
+
+    SET v_calculated_calories = p_carbohydrate * 4 + p_protein * 4 + p_fat * 9;
+    
+    IF v_calculated_calories > 99999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Calculated calories exceed maximum allowed value (99999.99). Please reduce macronutrient values.';
+    END IF;
+
     INSERT INTO food (food_name, serving_size, carbohydrate, protein, fat)
     VALUES (p_food_name, p_serving_size, p_carbohydrate, p_protein, p_fat);
-END $$
+END$$
+
 
 CREATE PROCEDURE sp_insert_user_food_log(
     IN p_user_id INT,
@@ -353,9 +380,34 @@ CREATE PROCEDURE sp_update_food(
     IN p_fat DECIMAL(5,2)
 )
 BEGIN
+    DECLARE v_calculated_calories DECIMAL(7,2);
+    
     IF NOT EXISTS (SELECT 1 FROM food WHERE food_name = p_food_name) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Food does not exist';
+    END IF;
+    IF p_serving_size <= 0 OR p_serving_size > 99999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Serving size must be between 0.01 and 99999.99';
+    END IF;
+    IF p_carbohydrate < 0 OR p_carbohydrate > 999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Carbohydrate must be between 0 and 999.99';
+    END IF;
+    IF p_protein < 0 OR p_protein > 999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Protein must be between 0 and 999.99';
+    END IF;
+    IF p_fat < 0 OR p_fat > 999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Fat must be between 0 and 999.99';
+    END IF;
+
+    SET v_calculated_calories = p_carbohydrate * 4 + p_protein * 4 + p_fat * 9;
+    
+    IF v_calculated_calories > 99999.99 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Calculated calories exceed maximum allowed value (99999.99). Please reduce macronutrient values.';
     END IF;
 
     UPDATE food
@@ -364,7 +416,7 @@ BEGIN
         protein = p_protein,
         fat = p_fat
     WHERE food_name = p_food_name;
-END $$
+END$$
 
 CREATE PROCEDURE sp_delete_food(IN p_food_name VARCHAR(64))
 BEGIN

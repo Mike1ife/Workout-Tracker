@@ -1391,7 +1391,6 @@ input[type="number"].form-input {
   margin-left: 1rem;
 }
 
-/* Macro distribution chart */
 .macro-chart-container {
   display: flex;
   justify-content: center;

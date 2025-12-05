@@ -1612,18 +1612,50 @@ const Dashboard = () => {
     };
 
     const handleSubmit = async () => {
-      if (!formData.foodName || !formData.carbohydrate || !formData.protein || !formData.fat) {
+      if (!formData.foodName || !formData.carbohydrate || !formData.protein || !formData.fat || !formData.servingSize) {
         alert('Please fill in all fields');
+        return;
+      }
+
+      const servingSize = parseFloat(formData.servingSize);
+      if (isNaN(servingSize) || servingSize <= 0 || servingSize > 99999.99) {
+        alert('Serving size must be between 0.01 and 99999.99 grams');
+        return;
+      }
+
+      const carbs = parseFloat(formData.carbohydrate);
+      const protein = parseFloat(formData.protein);
+      const fat = parseFloat(formData.fat);
+      
+      if (isNaN(carbs) || carbs < 0 || carbs > 999.99) {
+        alert('Carbohydrate must be between 0 and 999.99 grams');
+        return;
+      }
+      
+      if (isNaN(protein) || protein < 0 || protein > 999.99) {
+        alert('Protein must be between 0 and 999.99 grams');
+        return;
+      }
+      
+      if (isNaN(fat) || fat < 0 || fat > 999.99) {
+        alert('Fat must be between 0 and 999.99 grams');
+        return;
+      }
+
+      // ✅ NEW: Validate calculated calories don't exceed DECIMAL(7,2) limit
+      const calculatedCalories = carbs * 4 + protein * 4 + fat * 9;
+      if (calculatedCalories > 99999.99) {
+        alert(`Calculated calories (${Math.round(calculatedCalories)}) exceed maximum allowed value (99999.99). Please reduce macronutrient values.`);
         return;
       }
 
       try {
         await api.food.createFood({
           foodName: formData.foodName,
-          servingSize: parseFloat(formData.servingSize),
-          carbohydrate: parseFloat(formData.carbohydrate),
-          protein: parseFloat(formData.protein),
-          fat: parseFloat(formData.fat)
+          servingSize: parseFloat(servingSize.toFixed(2)),
+          carbohydrate: parseFloat(carbs.toFixed(2)),
+          protein: parseFloat(protein.toFixed(2)),
+          fat: parseFloat(fat.toFixed(2))
         });
 
         setShowNewFood(false);
@@ -1655,8 +1687,9 @@ const Dashboard = () => {
               <div className="input-with-suffix">
                 <input
                   type="number"
-                  step="1"
-                  min="1"
+                  step="0.01"
+                  min="0.01"
+                  max="99999.99"
                   value={formData.servingSize}
                   onChange={(e) => setFormData({ ...formData, servingSize: e.target.value })}
                   className="form-input"
@@ -1673,6 +1706,9 @@ const Dashboard = () => {
                 <label className="form-label">Carbs (g)</label>
                 <input
                   type="number"
+                  step="0.01"
+                  min="0"
+                  max="999.99"
                   value={formData.carbohydrate}
                   onChange={(e) => setFormData({ ...formData, carbohydrate: e.target.value })}
                   className="form-input"
@@ -1683,6 +1719,9 @@ const Dashboard = () => {
                 <label className="form-label">Protein (g)</label>
                 <input
                   type="number"
+                  step="0.01"
+                  min="0"
+                  max="999.99"
                   value={formData.protein}
                   onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
                   className="form-input"
@@ -1695,6 +1734,9 @@ const Dashboard = () => {
               <label className="form-label">Fat (g)</label>
               <input
                 type="number"
+                step="0.01"
+                min="0"
+                max="999.99"
                 value={formData.fat}
                 onChange={(e) => setFormData({ ...formData, fat: e.target.value })}
                 className="form-input"
@@ -1740,18 +1782,83 @@ const Dashboard = () => {
       return Math.round(carbs * 4 + protein * 4 + fat * 9);
     };
 
+    const validateDecimal = (value, maxDigits, maxDecimals, fieldName) => {
+      const num = parseFloat(value);
+      if (isNaN(num)) {
+        return `${fieldName} must be a valid number`;
+      }
+      
+      const valueStr = num.toFixed(maxDecimals);
+      const [intPart, decPart] = valueStr.split('.');
+      
+      if (intPart.length + (decPart ? decPart.length : 0) > maxDigits) {
+        return `${fieldName} exceeds maximum allowed value`;
+      }
+      
+      return null;
+    };
+
     const handleSubmit = async () => {
-      if (!formData.carbohydrate || !formData.protein || !formData.fat) {
+      if (!formData.carbohydrate || !formData.protein || !formData.fat || !formData.servingSize) {
         alert('Please fill in all fields');
+        return;
+      }
+
+      const servingSize = parseFloat(formData.servingSize);
+      if (isNaN(servingSize) || servingSize <= 0 || servingSize > 99999.99) {
+        alert('Serving size must be between 0.01 and 99999.99 grams');
+        return;
+      }
+
+      const servingSizeError = validateDecimal(servingSize, 7, 2, 'Serving size');
+      if (servingSizeError) {
+        alert(servingSizeError);
+        return;
+      }
+
+      const carbs = parseFloat(formData.carbohydrate);
+      const protein = parseFloat(formData.protein);
+      const fat = parseFloat(formData.fat);
+      
+      if (isNaN(carbs) || carbs < 0 || carbs > 999.99) {
+        alert('Carbohydrate must be between 0 and 999.99 grams');
+        return;
+      }
+
+      const carbsError = validateDecimal(carbs, 5, 2, 'Carbohydrate');
+      if (carbsError) {
+        alert(carbsError);
+        return;
+      }
+      
+      if (isNaN(protein) || protein < 0 || protein > 999.99) {
+        alert('Protein must be between 0 and 999.99 grams');
+        return;
+      }
+
+      const proteinError = validateDecimal(protein, 5, 2, 'Protein');
+      if (proteinError) {
+        alert(proteinError);
+        return;
+      }
+      
+      if (isNaN(fat) || fat < 0 || fat > 999.99) {
+        alert('Fat must be between 0 and 999.99 grams');
+        return;
+      }
+
+      const fatError = validateDecimal(fat, 5, 2, 'Fat');
+      if (fatError) {
+        alert(fatError);
         return;
       }
 
       try {
         await api.food.updateFood(editingFood.foodName, {
-          servingSize: parseFloat(formData.servingSize),
-          carbohydrate: parseFloat(formData.carbohydrate),
-          protein: parseFloat(formData.protein),
-          fat: parseFloat(formData.fat)
+          servingSize: parseFloat(servingSize.toFixed(2)),
+          carbohydrate: parseFloat(carbs.toFixed(2)),
+          protein: parseFloat(protein.toFixed(2)),
+          fat: parseFloat(fat.toFixed(2))
         });
 
         setShowEditFood(false);
@@ -1809,8 +1916,9 @@ const Dashboard = () => {
               <div className="input-with-suffix">
                 <input
                   type="number"
-                  step="1"
-                  min="1"
+                  step="0.01"
+                  min="0.01"
+                  max="99999.99"
                   value={formData.servingSize}
                   onChange={(e) => setFormData({ ...formData, servingSize: e.target.value })}
                   className="form-input"
@@ -1827,6 +1935,9 @@ const Dashboard = () => {
                 <label className="form-label">Carbs (g)</label>
                 <input
                   type="number"
+                  step="0.01"
+                  min="0"
+                  max="999.99"
                   value={formData.carbohydrate}
                   onChange={(e) => setFormData({ ...formData, carbohydrate: e.target.value })}
                   className="form-input"
@@ -1837,6 +1948,9 @@ const Dashboard = () => {
                 <label className="form-label">Protein (g)</label>
                 <input
                   type="number"
+                  step="0.01"
+                  min="0"
+                  max="999.99"
                   value={formData.protein}
                   onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
                   className="form-input"
@@ -1849,6 +1963,9 @@ const Dashboard = () => {
               <label className="form-label">Fat (g)</label>
               <input
                 type="number"
+                step="0.01"
+                min="0"
+                max="999.99"
                 value={formData.fat}
                 onChange={(e) => setFormData({ ...formData, fat: e.target.value })}
                 className="form-input"
@@ -2085,10 +2202,27 @@ const Dashboard = () => {
     };
 
     const handleSubmit = async () => {
-      if (quantity <= 0) {
-        alert('Quantity must be greater than 0');
-        return;
-      }
+        if (quantity <= 0) {
+          alert('Quantity must be greater than 0');
+          return;
+        }
+
+        if (quantity > 999.99) {
+          alert('Quantity must be 999.99 servings or less');
+          return;
+        }
+
+        const quantityNum = parseFloat(quantity);
+        if (isNaN(quantityNum)) {
+          alert('Quantity must be a valid number');
+          return;
+        }
+
+        const quantityStr = quantityNum.toString();
+        if (quantityStr.includes('.') && quantityStr.split('.')[1].length > 2) {
+          alert('Quantity can have at most 2 decimal places');
+          return;
+        }
 
       try {
         const oldCreateAt = editingFoodLog.create_at.split('T')[0] || editingFoodLog.create_at.split(' ')[0];
@@ -2188,6 +2322,8 @@ const Dashboard = () => {
                 <input
                   type="number"
                   step="0.1"
+                  min="0.01"
+                  max="999.99"
                   value={quantity}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -2769,7 +2905,7 @@ const Dashboard = () => {
                   <div className="card card-spacing">
                     <h3 className="card-title">Today's Macro Distribution</h3>
                     <div className="macro-chart-container">
-                      <ResponsiveContainer width={400} height={300}>
+                      <ResponsiveContainer width={600} height={300}>
                         <PieChart>
                           <Pie
                             data={macroData}
@@ -3017,7 +3153,7 @@ const Dashboard = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="createdAt"
-                          tickFormatter={(value) => formatDateTime(value)}
+                          tickFormatter={(value) => formatDate(value)}
                           style={{ fontSize: '0.75rem' }}
                         />
                         <YAxis
@@ -3103,7 +3239,7 @@ const Dashboard = () => {
                 {healthRecords.map((record, i) => (
                   <div key={i} className="health-record-card">
                     <div>
-                      <span className="health-record-date">{formatDateTime(record.createdAt)}</span>
+                      <span className="health-record-date">{formatDate(record.createdAt)}</span>
                       <div className="health-record-stats">
                         <div>
                           <span className="label">Weight: </span>
