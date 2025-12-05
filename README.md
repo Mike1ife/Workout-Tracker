@@ -44,7 +44,7 @@ Before starting the frontend, ensure the backend is running:
 
 1. **Setup Database** (one-time setup)
 ```bash
-mysql -u root -p < create_database.sql
+mysql -u root -p < workout_tracker_dump.sql
 ```
 
 2. **Install Python Dependencies**
