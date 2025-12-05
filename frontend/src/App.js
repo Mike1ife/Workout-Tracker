@@ -1609,18 +1609,17 @@ const Dashboard = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Serving Size</label>
+              <label className="form-label">Serving Size (g)</label>
               <div className="input-with-suffix">
                 <input
                   type="number"
                   step="1"
                   min="1"
-                  value={formData.servingSize.replace('g', '')}
-                  onChange={(e) => setFormData({ ...formData, servingSize: e.target.value + 'g' })}
+                  value={formData.servingSize}
+                  onChange={(e) => setFormData({ ...formData, servingSize: e.target.value })}
                   className="form-input"
                   placeholder="100"
                 />
-                <span className="input-suffix">g</span>
               </div>
               <p className="form-hint">
                 All macros should be per this serving size (we recommend 100g)
@@ -1664,7 +1663,7 @@ const Dashboard = () => {
             {(formData.carbohydrate || formData.protein || formData.fat) && (
               <div className="calorie-preview">
                 <p className="calorie-preview-text">
-                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize}
+                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize} g
                 </p>
               </div>
             )}
@@ -1764,18 +1763,17 @@ const Dashboard = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Serving Size</label>
+              <label className="form-label">Serving Size (g)</label>
               <div className="input-with-suffix">
                 <input
                   type="number"
                   step="1"
                   min="1"
-                  value={formData.servingSize.replace('g', '')}
-                  onChange={(e) => setFormData({ ...formData, servingSize: e.target.value + 'g' })}
+                  value={formData.servingSize}
+                  onChange={(e) => setFormData({ ...formData, servingSize: e.target.value })}
                   className="form-input"
                   placeholder="100"
                 />
-                <span className="input-suffix">g</span>
               </div>
               <p className="form-hint">
                 All macros should be per this serving size
@@ -1818,7 +1816,7 @@ const Dashboard = () => {
             {(formData.carbohydrate || formData.protein || formData.fat) && (
               <div className="calorie-preview">
                 <p className="calorie-preview-text">
-                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize}
+                  Calculated Calories: {calculateCalories()} cal per {formData.servingSize} g
                 </p>
               </div>
             )}
@@ -1900,7 +1898,7 @@ const Dashboard = () => {
                 <option value="">Choose a food...</option>
                 {foods.map((food, i) => (
                   <option key={i} value={food.foodName}>
-                    {food.foodName} - {food.servingSize || '100g'} ({Math.round(food.calories || 0)} cal)
+                    {food.foodName} - {food.servingSize}g ({Math.round(food.calories || 0)} cal)
                   </option>
                 ))}
               </select>
@@ -1920,7 +1918,7 @@ const Dashboard = () => {
               <>
                 <div className="form-group">
                   <label className="form-label">
-                    Quantity (servings of {getSelectedFoodData().servingSize || '100g'})
+                    Quantity (servings of {getSelectedFoodData().servingSize}g)
                   </label>
                   <div className="quantity-controls">
                     <button
@@ -1954,7 +1952,7 @@ const Dashboard = () => {
                     </button>
                   </div>
                   <p className="quantity-hint">
-                    = {(quantity * (getSelectedFoodData().servingSize === '100g' ? 100 : 1)).toFixed(0)}g total
+                    = {(quantity * getSelectedFoodData().servingSize).toFixed(0)}g total
                   </p>
                 </div>
 
@@ -1964,7 +1962,7 @@ const Dashboard = () => {
                     <div className="macro-item">
                       <span className="macro-label">Calories</span>
                       <span className="macro-value">
-                        {calculateTotal(getSelectedFoodData().calories)}
+                        {calculateTotal(getSelectedFoodData().calories)}cal
                       </span>
                     </div>
                     <div className="macro-item">
@@ -1987,7 +1985,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <p className="quantity-summary">
-                    {quantity} × {getSelectedFoodData().servingSize || '100g'} serving
+                    {quantity} serving
                   </p>
                 </div>
               </>
@@ -2802,11 +2800,9 @@ const Dashboard = () => {
                                   <div>
                                     <div className="food-log-name">
                                       {food.foodName || food.food_name}
-                                      {qty !== 1 && (
-                                        <span className="food-quantity-badge">
-                                          ({qty} × {food.servingSize || '100g'})
-                                        </span>
-                                      )}
+                                      <span className="food-quantity-badge">
+                                        ({qty} × {food.servingSize}g)
+                                      </span>
                                     </div>
                                   </div>
                                   <div className="food-log-actions">
