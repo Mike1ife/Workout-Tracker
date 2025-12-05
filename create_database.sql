@@ -913,21 +913,21 @@ DELIMITER ;
 -- Foods (All normalized to 100g)
 INSERT INTO food (food_name, serving_size, carbohydrate, protein, fat)
 VALUES
-('Chicken Breast', '100g', 0, 31, 3.6),
-('Brown Rice', '100g', 23, 2.5, 0.9),
-('Broccoli', '100g', 7, 2.8, 0.4),
-('Salmon', '100g', 0, 25, 8.5),
-('Sweet Potato', '100g', 20, 2, 0.2),
-('Eggs', '100g', 0.7, 13, 9.5),
-('Oatmeal', '100g', 12, 2.5, 1.5),
-('Banana', '100g', 23, 1.1, 0.3),
-('Almonds', '100g', 22, 21, 49),
-('Greek Yogurt', '100g', 3.6, 10, 0.4),
-('Avocado', '100g', 9, 2, 15),
-('Spinach', '100g', 3.6, 2.9, 0.4),
-('Quinoa', '100g', 21, 4.4, 1.9),
-('Tuna', '100g', 0, 26, 0.8),
-('Whole Wheat Bread', '100g', 41, 13, 3.4);
+('Chicken Breast', 100.0, 0, 31, 3.6),
+('Brown Rice', 100.0, 23, 2.5, 0.9),
+('Broccoli', 100.0, 7, 2.8, 0.4),
+('Salmon', 100.0, 0, 25, 8.5),
+('Sweet Potato', 100.0, 20, 2, 0.2),
+('Eggs', 100.0, 0.7, 13, 9.5),
+('Oatmeal', 100.0, 12, 2.5, 1.5),
+('Banana', 100.0, 23, 1.1, 0.3),
+('Almonds', 100.0, 22, 21, 49),
+('Greek Yogurt', 100.0, 3.6, 10, 0.4),
+('Avocado', 100.0, 9, 2, 15),
+('Spinach', 100.0, 3.6, 2.9, 0.4),
+('Quinoa', 100.0, 21, 4.4, 1.9),
+('Tuna', 100.0, 0, 26, 0.8),
+('Whole Wheat Bread', 100.0, 41, 13, 3.4);
 
 -- Exercises
 INSERT INTO exercise (exercise_name, description)
