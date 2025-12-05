@@ -326,6 +326,7 @@ export const aerobicAPI = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        metricNum: metricData.metricNum,  
         duration: metricData.duration,
         distance: metricData.distance
       })
@@ -333,11 +334,12 @@ export const aerobicAPI = {
     return handleResponse(response);
   },
 
-  updateMetric: async (aerobicName, sessionId, metricData) => {
-    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}`, {
+  updateMetric: async (aerobicName, sessionId, metricNum, metricData) => {
+    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}/${metricNum}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        metricNum: metricData.metricNum,  
         duration: metricData.duration,
         distance: metricData.distance
       })
@@ -345,8 +347,8 @@ export const aerobicAPI = {
     return handleResponse(response);
   },
 
-  deleteMetric: async (aerobicName, sessionId) => {
-    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}`, {
+  deleteMetric: async (aerobicName, sessionId, metricNum) => {
+    const response = await fetch(`${BASE_URL}/exercises/aerobics/${aerobicName}/metrics/${sessionId}/${metricNum}`, {
       method: 'DELETE'
     });
     return handleResponse(response);

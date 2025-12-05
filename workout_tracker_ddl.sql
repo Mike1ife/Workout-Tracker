@@ -18,11 +18,11 @@ CREATE TABLE users (
 -- Food
 CREATE TABLE food (
   food_name VARCHAR(64) NOT NULL,
-  serving_size VARCHAR(64) NOT NULL DEFAULT '100g',
+  serving_size DECIMAL(7,2) NOT NULL DEFAULT 100.00,
   calories DECIMAL(7,2) AS (carbohydrate * 4 + protein * 4 + fat * 9) STORED,
-  carbohydrate DEC(5,2) NOT NULL,
-  protein DEC(5,2) NOT NULL,
-  fat DEC(5,2) NOT NULL,
+  carbohydrate DECIMAL(5,2) NOT NULL,
+  protein DECIMAL(5,2) NOT NULL,
+  fat DECIMAL(5,2) NOT NULL,
   CONSTRAINT food_carbohydrate_chk CHECK (carbohydrate >= 0),
   CONSTRAINT food_protein_chk CHECK (protein >= 0),
   CONSTRAINT food_fat_chk CHECK (fat >= 0),
@@ -47,8 +47,8 @@ CREATE TABLE user_food (
 CREATE TABLE health_condition(
   user_id INT NOT NULL,
   create_at DATE NOT NULL,
-  weight DEC(5,2) NOT NULL,
-  body_fat_percent DEC(5,2) NOT NULL,
+  weight DECIMAL(5,2) NOT NULL,
+  body_fat_percent DECIMAL(5,2) NOT NULL,
   CONSTRAINT health_weight_chk CHECK (weight > 0),
   CONSTRAINT health_body_fat_chk CHECK (body_fat_percent >= 0 AND body_fat_percent <= 100),
   CONSTRAINT health_condition_pk PRIMARY KEY(user_id, create_at),
@@ -179,12 +179,13 @@ CREATE TABLE aerobics_section(
 
 -- Metric (with optional fields for aerobics)
 CREATE TABLE metric (
-  metric_id INT AUTO_INCREMENT,
   aerobics_section_id INT NOT NULL,
+  metric_num INT NOT NULL,
   duration TIME,
-  distance DEC(6,2),
+  distance DECIMAL(6,2),
+  CONSTRAINT metric_num_chk CHECK (metric_num >= 1),
   CONSTRAINT metric_distance_chk CHECK (distance IS NULL OR distance > 0),
-  CONSTRAINT metric_pk PRIMARY KEY (metric_id),
+  CONSTRAINT metric_pk PRIMARY KEY (aerobics_section_id, metric_num),
   CONSTRAINT metric_section_fk FOREIGN KEY (aerobics_section_id) REFERENCES aerobics_section(aerobics_section_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -291,7 +292,7 @@ END $$
 
 CREATE PROCEDURE sp_insert_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(64),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -346,7 +347,7 @@ END $$
 
 CREATE PROCEDURE sp_update_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(64),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -649,7 +650,8 @@ END $$
 
 CREATE PROCEDURE sp_insert_aerobics_section_metric(
     IN p_section_id INT,
-    IN p_duration VARCHAR(64),
+    IN p_metric_num INT,
+    IN p_duration TIME,
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
@@ -661,11 +663,21 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
-    INSERT INTO metric (aerobics_section_id, duration, distance)
-    VALUES (p_section_id, p_duration, p_distance);
+    -- Check if metric already exists
+    IF EXISTS (
+        SELECT 1 FROM metric
+        WHERE aerobics_section_id = p_section_id
+          AND metric_num = p_metric_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Metric with this number already exists for this section';
+    END IF;
+
+    INSERT INTO metric (aerobics_section_id, metric_num, duration, distance)
+    VALUES (p_section_id, p_metric_num, p_duration, p_distance);
 END $$
 
-CREATE PROCEDURE sp_fetch_aerobics_section_metric(
+CREATE PROCEDURE sp_fetch_aerobics_section_metrics(
     IN p_section_id INT
 )
 BEGIN
@@ -677,20 +689,23 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
-    SELECT duration, distance
+    SELECT *
     FROM metric
-    WHERE aerobics_section_id = p_section_id;
+    WHERE aerobics_section_id = p_section_id
+    ORDER BY metric_num;
 END $$
 
 CREATE PROCEDURE sp_update_aerobics_section_metric(
-    IN p_metric_id INT,
-    IN p_duration VARCHAR(64),
+    IN p_section_id INT,
+    IN p_metric_num INT,
+    IN p_duration TIME,
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM metric
-        WHERE metric_id = p_metric_id
+        WHERE aerobics_section_id = p_section_id 
+            AND metric_num = p_metric_num
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
@@ -699,23 +714,27 @@ BEGIN
     UPDATE metric
     SET duration = p_duration,
         distance = p_distance
-    WHERE metric_id = p_metric_id;
+    WHERE aerobics_section_id = p_section_id 
+        AND metric_num = p_metric_num;
 END $$
 
 CREATE PROCEDURE sp_delete_aerobics_section_metric(
-    IN p_metric_id INT
+    IN p_section_id INT,
+    IN p_metric_num INT
 )
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM metric
-        WHERE metric_id = p_metric_id
+        WHERE aerobics_section_id = p_section_id 
+            AND metric_num = p_metric_num
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
     END IF;
 
     DELETE FROM metric
-    WHERE metric_id = p_metric_id;
+    WHERE aerobics_section_id = p_section_id 
+        AND metric_num = p_metric_num;
 END $$
 
 CREATE PROCEDURE sp_fetch_liftings()
@@ -753,6 +772,16 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Lifting Section does not exist';
+    END IF;
+
+    -- Check if set already exists
+    IF EXISTS (
+        SELECT 1 FROM lifting_set
+        WHERE lifting_section_id = p_section_id
+          AND set_num = p_set_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Set with this number already exists for this section';
     END IF;
 
     INSERT INTO lifting_set (lifting_section_id, set_num, weight, reps)
@@ -836,7 +865,6 @@ END $$
 
 CREATE PROCEDURE sp_fetch_liftings_by_muscle_name(IN p_muscle_name VARCHAR(64))
 BEGIN
-    -- Muscle must exist
     IF NOT EXISTS (
         SELECT 1 FROM muscle WHERE muscle_name = p_muscle_name
     ) THEN
@@ -885,21 +913,21 @@ DELIMITER ;
 -- Foods (All normalized to 100g)
 INSERT INTO food (food_name, serving_size, carbohydrate, protein, fat)
 VALUES
-('Chicken Breast', '100g', 0, 31, 3.6),
-('Brown Rice', '100g', 23, 2.5, 0.9),
-('Broccoli', '100g', 7, 2.8, 0.4),
-('Salmon', '100g', 0, 25, 8.5),
-('Sweet Potato', '100g', 20, 2, 0.2),
-('Eggs', '100g', 0.7, 13, 9.5),
-('Oatmeal', '100g', 12, 2.5, 1.5),
-('Banana', '100g', 23, 1.1, 0.3),
-('Almonds', '100g', 22, 21, 49),
-('Greek Yogurt', '100g', 3.6, 10, 0.4),
-('Avocado', '100g', 9, 2, 15),
-('Spinach', '100g', 3.6, 2.9, 0.4),
-('Quinoa', '100g', 21, 4.4, 1.9),
-('Tuna', '100g', 0, 26, 0.8),
-('Whole Wheat Bread', '100g', 41, 13, 3.4);
+('Chicken Breast', 100.00, 0, 31, 3.6),
+('Brown Rice', 100.00, 23, 2.5, 0.9),
+('Broccoli', 100.00, 7, 2.8, 0.4),
+('Salmon', 100.00, 0, 25, 8.5),
+('Sweet Potato', 100.00, 20, 2, 0.2),
+('Eggs', 100.00, 0.7, 13, 9.5),
+('Oatmeal', 100.00, 12, 2.5, 1.5),
+('Banana', 100.00, 23, 1.1, 0.3),
+('Almonds', 100.00, 22, 21, 49),
+('Greek Yogurt', 100.00, 3.6, 10, 0.4),
+('Avocado', 100.00, 9, 2, 15),
+('Spinach', 100.00, 3.6, 2.9, 0.4),
+('Quinoa', 100.00, 21, 4.4, 1.9),
+('Tuna', 100.00, 0, 26, 0.8),
+('Whole Wheat Bread', 100.00, 41, 13, 3.4);
 
 -- Exercises
 INSERT INTO exercise (exercise_name, description)

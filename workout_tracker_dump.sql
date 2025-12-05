@@ -153,7 +153,7 @@ DROP TABLE IF EXISTS `food`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `food` (
   `food_name` varchar(64) NOT NULL,
-  `serving_size` varchar(64) NOT NULL DEFAULT '100g',
+  `serving_size` decimal(7,2) NOT NULL DEFAULT '100.00',
   `calories` decimal(7,2) GENERATED ALWAYS AS ((((`carbohydrate` * 4) + (`protein` * 4)) + (`fat` * 9))) STORED,
   `carbohydrate` decimal(5,2) NOT NULL,
   `protein` decimal(5,2) NOT NULL,
@@ -161,7 +161,8 @@ CREATE TABLE `food` (
   PRIMARY KEY (`food_name`),
   CONSTRAINT `food_carbohydrate_chk` CHECK ((`carbohydrate` >= 0)),
   CONSTRAINT `food_fat_chk` CHECK ((`fat` >= 0)),
-  CONSTRAINT `food_protein_chk` CHECK ((`protein` >= 0))
+  CONSTRAINT `food_protein_chk` CHECK ((`protein` >= 0)),
+  CONSTRAINT `food_serving_size_chk` CHECK ((`serving_size` >= 0))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -171,7 +172,7 @@ CREATE TABLE `food` (
 
 LOCK TABLES `food` WRITE;
 /*!40000 ALTER TABLE `food` DISABLE KEYS */;
-INSERT INTO `food` (`food_name`, `serving_size`, `carbohydrate`, `protein`, `fat`) VALUES ('Almonds','100g',22.00,21.00,49.00),('Avocado','100g',9.00,2.00,15.00),('Banana','100g',23.00,1.10,0.30),('Broccoli','100g',7.00,2.80,0.40),('Brown Rice','100g',23.00,2.50,0.90),('Chicken Breast','100g',0.00,31.00,3.60),('Eggs','100g',0.70,13.00,9.50),('Greek Yogurt','100g',3.60,10.00,0.40),('Oatmeal','100g',12.00,2.50,1.50),('Quinoa','100g',21.00,4.40,1.90),('Salmon','100g',0.00,25.00,8.50),('Spinach','100g',3.60,2.90,0.40),('Sweet Potato','100g',20.00,2.00,0.20),('Tuna','100g',0.00,26.00,0.80),('Whole Wheat Bread','100g',41.00,13.00,3.40);
+INSERT INTO `food` (`food_name`, `serving_size`, `carbohydrate`, `protein`, `fat`) VALUES ('Almonds',100.00,22.00,21.00,49.00),('Avocado',100.00,9.00,2.00,15.00),('Banana',100.00,23.00,1.10,0.30),('Broccoli',100.00,7.00,2.80,0.40),('Brown Rice',100.00,23.00,2.50,0.90),('Chicken Breast',100.00,0.00,31.00,3.60),('Eggs',100.00,0.70,13.00,9.50),('Greek Yogurt',100.00,3.60,10.00,0.40),('Oatmeal',100.00,12.00,2.50,1.50),('Quinoa',100.00,21.00,4.40,1.90),('Salmon',100.00,0.00,25.00,8.50),('Spinach',100.00,3.60,2.90,0.40),('Sweet Potato',100.00,20.00,2.00,0.20),('Tuna',100.00,0.00,26.00,0.80),('Whole Wheat Bread',100.00,41.00,13.00,3.40);
 /*!40000 ALTER TABLE `food` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -200,6 +201,7 @@ CREATE TABLE `health_condition` (
 
 LOCK TABLES `health_condition` WRITE;
 /*!40000 ALTER TABLE `health_condition` DISABLE KEYS */;
+INSERT INTO `health_condition` VALUES (1,'2025-12-03',123.00,12.00),(1,'2025-12-06',12.00,12.00);
 /*!40000 ALTER TABLE `health_condition` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -270,7 +272,7 @@ CREATE TABLE `lifting_section` (
   KEY `lifting_section_lifting_fk` (`exercise_name`),
   CONSTRAINT `lifting_section_fk` FOREIGN KEY (`session_id`) REFERENCES `user_session` (`session_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `lifting_section_lifting_fk` FOREIGN KEY (`exercise_name`) REFERENCES `lifting` (`exercise_name`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -319,14 +321,14 @@ DROP TABLE IF EXISTS `metric`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `metric` (
-  `metric_id` int NOT NULL AUTO_INCREMENT,
   `aerobics_section_id` int NOT NULL,
+  `metric_num` int NOT NULL,
   `duration` time DEFAULT NULL,
   `distance` decimal(6,2) DEFAULT NULL,
-  PRIMARY KEY (`metric_id`),
-  KEY `metric_section_fk` (`aerobics_section_id`),
+  PRIMARY KEY (`aerobics_section_id`,`metric_num`),
   CONSTRAINT `metric_section_fk` FOREIGN KEY (`aerobics_section_id`) REFERENCES `aerobics_section` (`aerobics_section_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `metric_distance_chk` CHECK (((`distance` is null) or (`distance` > 0)))
+  CONSTRAINT `metric_distance_chk` CHECK (((`distance` is null) or (`distance` > 0))),
+  CONSTRAINT `metric_num_chk` CHECK ((`metric_num` >= 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -415,6 +417,7 @@ CREATE TABLE `user_food` (
 
 LOCK TABLES `user_food` WRITE;
 /*!40000 ALTER TABLE `user_food` DISABLE KEYS */;
+INSERT INTO `user_food` VALUES (1,'Eggs',600.00,'2025-12-04 23:43:55'),(1,'Eggs',4.50,'2025-12-05 23:42:20'),(1,'Greek Yogurt',3.00,'2025-12-04 23:44:07'),(1,'Oatmeal',4.50,'2025-12-04 23:43:40'),(1,'Quinoa',2.50,'2025-12-01 23:42:47');
 /*!40000 ALTER TABLE `user_food` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -435,7 +438,7 @@ CREATE TABLE `user_session` (
   UNIQUE KEY `session_ak` (`user_id`,`start_time`,`end_time`),
   CONSTRAINT `session_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `session_time_chk` CHECK ((`end_time` > `start_time`))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -444,6 +447,7 @@ CREATE TABLE `user_session` (
 
 LOCK TABLES `user_session` WRITE;
 /*!40000 ALTER TABLE `user_session` DISABLE KEYS */;
+INSERT INTO `user_session` VALUES (1,1,'2025-12-04 23:57:00','2025-12-04 23:58:00','');
 /*!40000 ALTER TABLE `user_session` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -465,7 +469,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`),
   CONSTRAINT `users_age_chk` CHECK (((`age` > 0) and (`age` < 100)))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -474,6 +478,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'Mike','Tai','yitai77@gmail.com','daiguangyi123',24,'Male');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -525,19 +530,22 @@ DELIMITER ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_delete_aerobics_section_metric`(
-    IN p_metric_id INT
+    IN p_section_id INT,
+    IN p_metric_num INT
 )
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM metric
-        WHERE metric_id = p_metric_id
+        WHERE aerobics_section_id = p_section_id 
+            AND metric_num = p_metric_num
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
     END IF;
 
     DELETE FROM metric
-    WHERE metric_id = p_metric_id;
+    WHERE aerobics_section_id = p_section_id 
+        AND metric_num = p_metric_num;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -808,7 +816,7 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
-/*!50003 DROP PROCEDURE IF EXISTS `sp_fetch_aerobics_section_metric` */;
+/*!50003 DROP PROCEDURE IF EXISTS `sp_fetch_aerobics_section_metrics` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -818,7 +826,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_fetch_aerobics_section_metric`(
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_fetch_aerobics_section_metrics`(
     IN p_section_id INT
 )
 BEGIN
@@ -830,9 +838,10 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
-    SELECT duration, distance
+    SELECT *
     FROM metric
-    WHERE aerobics_section_id = p_section_id;
+    WHERE aerobics_section_id = p_section_id
+    ORDER BY metric_num;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -1382,7 +1391,8 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_insert_aerobics_section_metric`(
     IN p_section_id INT,
-    IN p_duration VARCHAR(64),
+    IN p_metric_num INT,
+    IN p_duration TIME,
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
@@ -1394,8 +1404,8 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
-    INSERT INTO metric (aerobics_section_id, duration, distance)
-    VALUES (p_section_id, p_duration, p_distance);
+    INSERT INTO metric (aerobics_section_id, metric_num, duration, distance)
+    VALUES (p_section_id, p_metric_num, p_duration, p_distance);
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -1414,7 +1424,7 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_insert_food`(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(64),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -1627,14 +1637,16 @@ DELIMITER ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_update_aerobics_section_metric`(
-    IN p_metric_id INT,
-    IN p_duration VARCHAR(64),
+    IN p_section_id INT,
+    IN p_metric_num INT,
+    IN p_duration TIME,
     IN p_distance DECIMAL(6,2)
 )
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM metric
-        WHERE metric_id = p_metric_id
+        WHERE aerobics_section_id = p_section_id 
+            AND metric_num = p_metric_num
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Aerobics metric record does not exist';
@@ -1643,7 +1655,8 @@ BEGIN
     UPDATE metric
     SET duration = p_duration,
         distance = p_distance
-    WHERE metric_id = p_metric_id;
+    WHERE aerobics_section_id = p_section_id 
+        AND metric_num = p_metric_num;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -1662,7 +1675,7 @@ DELIMITER ;
 DELIMITER ;;
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_update_food`(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size VARCHAR(64),
+    IN p_serving_size DECIMAL(7,2),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -1810,4 +1823,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-12-04 17:51:40
+-- Dump completed on 2025-12-05  0:04:02

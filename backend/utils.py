@@ -99,7 +99,7 @@ def fetch_all_foods() -> List[Food]:
     return [
         Food(
             foodName=row["food_name"],
-            servingSize=row.get("serving_size", "100g"),
+            servingSize=row["serving_size"],
             calories=row.get("calories"),
             carbohydrate=row["carbohydrate"],
             protein=row["protein"],
@@ -114,7 +114,7 @@ def fetch_food(foodName: str) -> Food:
     row = rows[0]
     return Food(
         foodName=row["food_name"],
-        servingSize=row.get("serving_size", "100g"),
+        servingSize=row["serving_size"],
         calories=row.get("calories"),
         carbohydrate=row["carbohydrate"],
         protein=row["protein"],
@@ -127,7 +127,7 @@ def fetch_foods_by_user_id(userId: int) -> List[dict]:
     return [
         {
             "foodName": row["food_name"],
-            "servingSize": row.get("serving_size", "100g"),
+            "servingSize": row["serving_size"],
             "calories": row["calories"],
             "carbohydrate": row["carbohydrate"],
             "protein": row["protein"],
@@ -162,7 +162,7 @@ def insert_user_food_log(userFoodLog: UserFoodLog):
             userFoodLog.quantity,
         ),
     )
-    
+
 
 def delete_user_food_log_entry(userId: int, foodName: str, createAt: str):
     _call_proc("sp_delete_user_food_log", (userId, foodName, createAt))
@@ -289,10 +289,7 @@ def fetch_exercise_by_name(exerciseName: str) -> dict:
 def fetch_equipments_by_exercise_name(exerciseName: str) -> List[dict]:
     rows = _call_proc("sp_fetch_equipments_by_exercise_name", (exerciseName,))
     return [
-        {
-            "equipmentName": row["equipment_name"],
-            "description": row.get("description")
-        }
+        {"equipmentName": row["equipment_name"], "description": row.get("description")}
         for row in rows
     ]
 
@@ -326,12 +323,12 @@ def fetch_aerobics_by_name(aerobicsName: str) -> dict:
 def insert_aerobics_section_metric(sectionId: int, metric: Metric):
     _call_proc(
         "sp_insert_aerobics_section_metric",
-        (sectionId, metric.duration, metric.distance),
+        (sectionId, metric.metricNum, metric.duration, metric.distance),
     )
 
 
 def fetch_aerobics_section_metric(sectionId: int) -> List[Metric]:
-    rows = _call_proc("sp_fetch_aerobics_section_metric", (sectionId,))
+    rows = _call_proc("sp_fetch_aerobics_section_metrics", (sectionId,))
     result = []
 
     for row in rows:
@@ -347,20 +344,26 @@ def fetch_aerobics_section_metric(sectionId: int) -> List[Metric]:
             else:
                 duration_str = str(duration)
 
-        result.append(Metric(duration=duration_str, distance=row.get("distance")))
-    
+        result.append(
+            Metric(
+                metricNum=row["metric_num"],
+                duration=duration_str,
+                distance=row.get("distance"),
+            )
+        )
+
     return result
 
 
-def update_aerobics_section_metric(metricId: int, metric: Metric):
+def update_aerobics_section_metric(sectionId: int, metricNum: int, metric: Metric):
     _call_proc(
         "sp_update_aerobics_section_metric",
-        (metricId, metric.duration, metric.distance),
+        (sectionId, metricNum, metric.duration, metric.distance),
     )
 
 
-def delete_aerobics_section_metric(metricId: int):
-    _call_proc("sp_delete_aerobics_section_metric", (metricId,))
+def delete_aerobics_section_metric(sectionId: int, metricNum: int):
+    _call_proc("sp_delete_aerobics_section_metric", (sectionId, metricNum))
 
 
 def fetch_liftings() -> List[dict]:
@@ -411,12 +414,7 @@ def delete_lifting_section_set(sectionId: int, setNum: int):
 
 def fetch_muscles_by_lifting_name(liftingName: str) -> List[dict]:
     rows = _call_proc("sp_fetch_muscles_by_lifting_name", (liftingName,))
-    return [
-        {
-            "muscleName": row["muscle_name"]
-        }
-        for row in rows
-    ]
+    return [{"muscleName": row["muscle_name"]} for row in rows]
 
 
 def fetch_liftings_by_muscle_name(muscleName: str) -> List[dict]:
@@ -442,12 +440,12 @@ def get_lifting_section_id(sessionId: int, exerciseName: str) -> int:
         with conn.cursor() as cursor:
             cursor.execute(
                 "SELECT lifting_section_id FROM lifting_section WHERE session_id = %s AND exercise_name = %s",
-                (sessionId, exerciseName)
+                (sessionId, exerciseName),
             )
             result = cursor.fetchone()
             if not result:
                 raise HTTPException(status_code=404, detail="Lifting section not found")
-            return result['lifting_section_id']
+            return result["lifting_section_id"]
     except HTTPException:
         raise
     except Exception as e:
@@ -459,30 +457,14 @@ def get_aerobics_section_id(sessionId: int, exerciseName: str) -> int:
         with conn.cursor() as cursor:
             cursor.execute(
                 "SELECT aerobics_section_id FROM aerobics_section WHERE session_id = %s AND exercise_name = %s",
-                (sessionId, exerciseName)
+                (sessionId, exerciseName),
             )
             result = cursor.fetchone()
             if not result:
-                raise HTTPException(status_code=404, detail="Aerobics section not found")
-            return result['aerobics_section_id']
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-
-def get_aerobics_metric_id(sessionId: int, exerciseName: str) -> int:
-    try:
-        section_id = get_aerobics_section_id(sessionId, exerciseName)
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT metric_id FROM metric WHERE aerobics_section_id = %s LIMIT 1",
-                (section_id,)
-            )
-            result = cursor.fetchone()
-            if not result:
-                raise HTTPException(status_code=404, detail="Metric not found")
-            return result['metric_id']
+                raise HTTPException(
+                    status_code=404, detail="Aerobics section not found"
+                )
+            return result["aerobics_section_id"]
     except HTTPException:
         raise
     except Exception as e:
