@@ -18,13 +18,12 @@ CREATE TABLE users (
 -- Food
 CREATE TABLE food (
   food_name VARCHAR(64) NOT NULL,
-  serving_size DECIMAL(7,2) NOT NULL DEFAULT 100.0,
+  serving_size VARCHAR(20) NOT NULL DEFAULT '100g',
   calories DECIMAL(7,2) AS (carbohydrate * 4 + protein * 4 + fat * 9) STORED,
   carbohydrate DECIMAL(5,2) NOT NULL,
   protein DECIMAL(5,2) NOT NULL,
   fat DECIMAL(5,2) NOT NULL,
   CONSTRAINT food_carbohydrate_chk CHECK (carbohydrate >= 0),
-  CONSTRAINT food_serving_size_chk CHECK (serving_size >= 0),
   CONSTRAINT food_protein_chk CHECK (protein >= 0),
   CONSTRAINT food_fat_chk CHECK (fat >= 0),
   CONSTRAINT food_pk PRIMARY KEY (food_name)
@@ -293,7 +292,7 @@ END $$
 
 CREATE PROCEDURE sp_insert_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size DECIMAL(7,2),
+    IN p_serving_size VARCHAR(20),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -348,7 +347,7 @@ END $$
 
 CREATE PROCEDURE sp_update_food(
     IN p_food_name VARCHAR(64),
-    IN p_serving_size DECIMAL(7,2),
+    IN p_serving_size VARCHAR(20),
     IN p_carbohydrate DECIMAL(5,2),
     IN p_protein DECIMAL(5,2),
     IN p_fat DECIMAL(5,2)
@@ -664,6 +663,16 @@ BEGIN
             SET MESSAGE_TEXT = 'Aerobics Section does not exist';
     END IF;
 
+    -- Check if metric already exists
+    IF EXISTS (
+        SELECT 1 FROM metric
+        WHERE aerobics_section_id = p_section_id
+          AND metric_num = p_metric_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Metric with this number already exists for this section';
+    END IF;
+
     INSERT INTO metric (aerobics_section_id, metric_num, duration, distance)
     VALUES (p_section_id, p_metric_num, p_duration, p_distance);
 END $$
@@ -765,6 +774,16 @@ BEGIN
             SET MESSAGE_TEXT = 'Lifting Section does not exist';
     END IF;
 
+    -- Check if set already exists
+    IF EXISTS (
+        SELECT 1 FROM lifting_set
+        WHERE lifting_section_id = p_section_id
+          AND set_num = p_set_num
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Set with this number already exists for this section';
+    END IF;
+
     INSERT INTO lifting_set (lifting_section_id, set_num, weight, reps)
     VALUES (p_section_id, p_set_num, p_weight, p_reps);
 END $$
@@ -846,7 +865,6 @@ END $$
 
 CREATE PROCEDURE sp_fetch_liftings_by_muscle_name(IN p_muscle_name VARCHAR(64))
 BEGIN
-    -- Muscle must exist
     IF NOT EXISTS (
         SELECT 1 FROM muscle WHERE muscle_name = p_muscle_name
     ) THEN

@@ -231,6 +231,9 @@ const Dashboard = () => {
   const [editingSession, setEditingSession] = useState(null);
   const [showAddAerobicMetric, setShowAddAerobicMetric] = useState(false);
   const [selectedAerobicExercise, setSelectedAerobicExercise] = useState(null);
+  const [showEditAerobicMetric, setShowEditAerobicMetric] = useState(false);
+  const [editingAerobicMetric, setEditingAerobicMetric] = useState(null);
+  const [editingAerobicMetricExercise, setEditingAerobicMetricExercise] = useState(null);
   const [exerciseMuscles, setExerciseMuscles] = useState({});
   const [exerciseEquipment, setExerciseEquipment] = useState({});
 
@@ -1341,7 +1344,7 @@ const Dashboard = () => {
                             className="btn-small"
                           >
                             <Plus size={16} />
-                            Add Metrics
+                            Add Metric
                           </button>
                         )}
                         {!isAerobic && (
@@ -1366,25 +1369,59 @@ const Dashboard = () => {
                     {isExpanded && (
                       <div className="exercise-detail-content">
                         {isAerobic ? (
-                          <div className="aerobics-metrics">
+                          <div className="sets-table">
+                            <div className="sets-table-header">
+                              <span>Metric</span>
+                              <span>Duration</span>
+                              <span>Distance</span>
+                              <span>Actions</span>
+                            </div>
                             {aerobicMetrics[exercise.exerciseName] && aerobicMetrics[exercise.exerciseName].length > 0 ? (
                               aerobicMetrics[exercise.exerciseName].map((metric, idx) => (
                                 <div key={idx} className="sets-table-row">
-                                  <span>#{metric.metricNum}</span>
-                                  <div className="metric-item">
-                                    <span className="metric-label">Duration</span>
-                                    <span className="metric-value">{metric.duration || '--:--'}</span>
-                                  </div>
-                                  <div className="metric-item">
-                                    <span className="metric-label">Distance</span>
-                                    <span className="metric-value">
-                                      {metric.distance ? `${metric.distance} mi` : '-- mi'}
-                                    </span>
+                                  <span>Metric {metric.metricNum}</span>
+                                  <span>{metric.duration || '--:--:--'}</span>
+                                  <span>{metric.distance ? `${metric.distance} mi` : '-- mi'}</span>
+                                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button
+                                      onClick={() => {
+                                        setEditingAerobicMetric(metric);
+                                        setEditingAerobicMetricExercise(exercise);
+                                        setShowEditAerobicMetric(true);
+                                      }}
+                                      className="btn-secondary btn-icon-only"
+                                      title="Edit metric"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                      </svg>
+                                    </button>
+                                    <button 
+                                      onClick={async () => {
+                                        if (!window.confirm('Are you sure you want to delete this metric?')) {
+                                          return;
+                                        }
+                                        try {
+                                          await api.aerobic.deleteMetric(exercise.exerciseName, selectedSession.session_id, metric.metricNum);
+                                          const metrics = await api.aerobic.getMetrics(exercise.exerciseName, selectedSession.session_id);
+                                          setAerobicMetrics(prev => ({
+                                            ...prev,
+                                            [exercise.exerciseName]: metrics
+                                          }));
+                                        } catch (err) {
+                                          alert('Error deleting metric: ' + err.message);
+                                        }
+                                      }}
+                                      className="btn-delete"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
                                   </div>
                                 </div>
                               ))
                             ) : (
-                              <p className="no-data">No metrics added yet</p>
+                              <p className="no-data no-data-compact">No metrics added yet</p>
                             )}
                           </div>
                         ) : (
@@ -2205,26 +2242,7 @@ const Dashboard = () => {
       duration: '',
       distance: ''
     });
-    const [existingMetrics, setExistingMetrics] = useState([]);
 
-    useEffect(() => {
-      const fetchExisting = async () => {
-        if (selectedAerobicExercise) {
-          try {
-            const metrics = await api.aerobic.getMetrics(
-              selectedAerobicExercise.exerciseName,
-              selectedSession.session_id
-            );
-            setExistingMetrics(metrics);
-          } catch (err) {
-            console.error('Error fetching existing metrics:', err);
-            setExistingMetrics([]);
-          }
-        }
-      };
-      fetchExisting();
-    }, [selectedAerobicExercise]);
-    
     const handleSubmit = async () => {
       if (!formData.metricNum) {
         alert('Please provide a metric number');
@@ -2237,56 +2255,141 @@ const Dashboard = () => {
       }
 
       try {
-        const existingMetric = existingMetrics.find(m => m.metricNum === parseInt(formData.metricNum));
-        
-        if (existingMetric) {
-          await api.aerobic.updateMetric(
-            selectedAerobicExercise.exerciseName,
-            selectedSession.session_id,
-            parseInt(formData.metricNum),
-            {
-              metricNum: parseInt(formData.metricNum),
-              duration: formData.duration || null,
-              distance: formData.distance ? parseFloat(formData.distance) : null
-            }
-          );
-        } else {
-          await api.aerobic.addMetric(
-            selectedAerobicExercise.exerciseName,
-            selectedSession.session_id,
-            {
-              metricNum: parseInt(formData.metricNum),
-              duration: formData.duration || null,
-              distance: formData.distance ? parseFloat(formData.distance) : null
-            }
-          );
-        }
+        await api.aerobic.addMetric(
+          selectedAerobicExercise.exerciseName,
+          selectedSession.session_id,
+          {
+            metricNum: parseInt(formData.metricNum),
+            duration: formData.duration || null,
+            distance: formData.distance ? parseFloat(formData.distance) : null
+          }
+        );
         
         setShowAddAerobicMetric(false);
+        setSelectedAerobicExercise(null);
         setExerciseRefreshKey(prev => prev + 1);
-        alert('Metrics saved successfully!');
+        alert('Metric added successfully!');
       } catch (err) {
-        alert('Error saving metrics: ' + err.message);
+        alert('Error adding metric: ' + err.message);
+      }
+    };
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3 className="modal-title">Add Metric - {selectedAerobicExercise?.exerciseName}</h3>
+          
+          <div className="form-container">
+            <div className="form-group">
+              <label className="form-label">Metric Number</label>
+              <input 
+                type="number" 
+                value={formData.metricNum}
+                onChange={(e) => setFormData({...formData, metricNum: e.target.value})}
+                className="form-input"
+                min="1"
+                placeholder="1"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Duration (HH:MM:SS)</label>
+                <input 
+                  type="text" 
+                  value={formData.duration}
+                  onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                  className="form-input"
+                  placeholder="00:30:00"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Distance (miles)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  value={formData.distance}
+                  onChange={(e) => setFormData({...formData, distance: e.target.value})}
+                  className="form-input"
+                  placeholder="3.5"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="modal-buttons">
+            <button onClick={() => {
+              setShowAddAerobicMetric(false);
+              setSelectedAerobicExercise(null);
+            }} className="btn-secondary">
+              Cancel
+            </button>
+            <button onClick={handleSubmit} className="btn-primary">
+              Add Metric
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const EditAerobicMetricForm = ({ metric, exercise }) => {
+    const originalMetricNum = useRef(metric?.metricNum);
+    
+    const [formData, setFormData] = useState({
+      metricNum: metric?.metricNum || 1,
+      duration: metric?.duration || '',
+      distance: metric?.distance || ''
+    });
+
+    const handleSubmit = async () => {
+      if (!formData.metricNum) {
+        alert('Please provide a metric number');
+        return;
+      }
+
+      if (!formData.duration && !formData.distance) {
+        alert('Please fill in at least one field (duration or distance)');
+        return;
+      }
+
+      try {
+        await api.aerobic.updateMetric(
+          exercise.exerciseName,
+          selectedSession.session_id,
+          originalMetricNum.current,
+          {
+            metricNum: parseInt(formData.metricNum),
+            duration: formData.duration || null,
+            distance: formData.distance ? parseFloat(formData.distance) : null
+          }
+        );
+        
+        setShowEditAerobicMetric(false);
+        setEditingAerobicMetric(null);
+        setEditingAerobicMetricExercise(null);
+        setExerciseRefreshKey(prev => prev + 1);
+        alert('Metric updated successfully!');
+      } catch (err) {
+        alert('Error updating metric: ' + err.message);
       }
     };
 
     const handleDelete = async () => {
-      if (!formData.metricNum) {
-        alert('Please select a metric number to delete');
-        return;
-      }
-
       if (!window.confirm('Are you sure you want to delete this metric?')) {
         return;
       }
 
       try {
         await api.aerobic.deleteMetric(
-          selectedAerobicExercise.exerciseName,
+          exercise.exerciseName,
           selectedSession.session_id,
-          parseInt(formData.metricNum)
+          originalMetricNum.current
         );
-        setShowAddAerobicMetric(false);
+        
+        setShowEditAerobicMetric(false);
+        setEditingAerobicMetric(null);
+        setEditingAerobicMetricExercise(null);
         setExerciseRefreshKey(prev => prev + 1);
         alert('Metric deleted successfully!');
       } catch (err) {
@@ -2297,9 +2400,16 @@ const Dashboard = () => {
     return (
       <div className="modal-overlay">
         <div className="modal-content">
-          <h3 className="modal-title">
-            Manage Metrics - {selectedAerobicExercise?.exerciseName}
-          </h3>
+          <div className="modal-title-row">
+            <h3 className="modal-title">Edit Metric - {exercise?.exerciseName}</h3>
+            <button
+              onClick={handleDelete}
+              className="btn-delete"
+              title="Delete metric"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
           
           <div className="form-container">
             <div className="form-group">
@@ -2307,72 +2417,47 @@ const Dashboard = () => {
               <input 
                 type="number" 
                 value={formData.metricNum}
-                onChange={(e) => {
-                  const metricNum = e.target.value;
-                  setFormData({...formData, metricNum});
-                  
-                  if (metricNum) {
-                    const existing = existingMetrics.find(m => m.metricNum === parseInt(metricNum));
-                    if (existing) {
-                      setFormData({
-                        metricNum,
-                        duration: existing.duration || '',
-                        distance: existing.distance || ''
-                      });
-                    }
-                  }
-                }}
+                onChange={(e) => setFormData({...formData, metricNum: e.target.value})}
                 className="form-input"
                 min="1"
-                placeholder="1"
-              />
-              <p className="form-hint">
-                {existingMetrics.length > 0 && (
-                  <>Existing metrics: {existingMetrics.map(m => m.metricNum).join(', ')}</>
-                )}
-              </p>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Duration (HH:MM:SS)</label>
-              <input 
-                type="text" 
-                value={formData.duration}
-                onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                className="form-input"
-                placeholder="00:30:00"
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Distance (miles)</label>
-              <input 
-                type="number" 
-                value={formData.distance}
-                onChange={(e) => setFormData({...formData, distance: e.target.value})}
-                className="form-input"
-                placeholder="3.5"
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Duration (HH:MM:SS)</label>
+                <input 
+                  type="text" 
+                  value={formData.duration}
+                  onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                  className="form-input"
+                  placeholder="00:30:00"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Distance (miles)</label>
+                <input 
+                  type="number" 
+                  step="0.1"
+                  value={formData.distance}
+                  onChange={(e) => setFormData({...formData, distance: e.target.value})}
+                  className="form-input"
+                  placeholder="3.5"
+                />
+              </div>
             </div>
           </div>
           
           <div className="modal-buttons">
-            {formData.metricNum && existingMetrics.some(m => m.metricNum === parseInt(formData.metricNum)) && (
-              <button 
-                onClick={handleDelete}
-                className="btn-delete"
-                style={{ marginRight: 'auto' }}
-              >
-                <Trash2 size={16} />
-                Delete
-              </button>
-            )}
-            <button onClick={() => setShowAddAerobicMetric(false)} className="btn-secondary">
+            <button onClick={() => {
+              setShowEditAerobicMetric(false);
+              setEditingAerobicMetric(null);
+              setEditingAerobicMetricExercise(null);
+            }} className="btn-secondary">
               Cancel
             </button>
             <button onClick={handleSubmit} className="btn-primary">
-              {formData.metricNum && existingMetrics.some(m => m.metricNum === parseInt(formData.metricNum)) 
-                ? 'Update' : 'Add'} Metric
+              Update Metric
             </button>
           </div>
         </div>
@@ -3037,6 +3122,7 @@ const Dashboard = () => {
       {showAddSet && <AddSetForm />}
       {showEditSet && editingSet && <EditSetForm />}
       {showAddAerobicMetric && <AddAerobicMetricForm />}
+      {showEditAerobicMetric && editingAerobicMetric && <EditAerobicMetricForm metric={editingAerobicMetric} exercise={editingAerobicMetricExercise} />}
     </div>
   );
 };

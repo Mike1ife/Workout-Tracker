@@ -473,4 +473,3 @@ def get_aerobics_section_id(sessionId: int, exerciseName: str) -> int:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-

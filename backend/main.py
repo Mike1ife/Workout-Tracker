@@ -205,17 +205,17 @@ async def add_metric_to_aerobic(aerobicName: str, sessionId: int, metric: Metric
     return {"message": "Add metric successfully"}
 
 
-@app.put("/exercises/aerobics/{aerobicName}/metrics/{sessionId}", tags=["Aerobics"])
-async def update_metric_for_aerobic(aerobicName: str, sessionId: int, metric: Metric):
-    metric_id = get_aerobics_metric_id(sessionId, aerobicName)
-    update_aerobics_section_metric(metricId=metric_id, metric=metric)
+@app.put("/exercises/aerobics/{aerobicName}/metrics/{sessionId}/{metricNum}", tags=["Aerobics"])
+async def update_metric_for_aerobic(aerobicName: str, sessionId: int, metricNum: int, metric: Metric):
+    section_id = get_aerobics_section_id(sessionId, aerobicName)
+    update_aerobics_section_metric(sectionId=section_id, metricNum=metricNum, metric=metric)
     return {"message": "Update metric successfully"}
 
 
-@app.delete("/exercises/aerobics/{aerobicName}/metrics/{sessionId}", tags=["Aerobics"])
-async def delete_metric_from_aerobic(aerobicName: str, sessionId: int):
-    metric_id = get_aerobics_metric_id(sessionId, aerobicName)
-    delete_aerobics_section_metric(metricId=metric_id)
+@app.delete("/exercises/aerobics/{aerobicName}/metrics/{sessionId}/{metricNum}", tags=["Aerobics"])
+async def delete_metric_from_aerobic(aerobicName: str, sessionId: int, metricNum: int):
+    section_id = get_aerobics_section_id(sessionId, aerobicName)
+    delete_aerobics_section_metric(sectionId=section_id, metricNum=metricNum)
     return {"message": "Delete metric successfully"}
 
 
